@@ -94,6 +94,13 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
         <div style="height:10px"></div>
         <button class="nut phu" id="luu-ten">Lưu tên</button>
       </div>
+      <div class="the"><h2>Danh mục hàng GOKASA</h2>
+        <p id="gk-info" class="capnhat">Đang xem…</p>
+        <p class="capnhat">Xuất danh mục hàng từ GOKASA ra file CSV (có EAN, tên, giá bán), rồi tải lên đây. Mọi máy sẽ dùng bản mới.</p>
+        <input type="file" id="gk-file" accept=".csv,.txt,text/csv,text/plain" hidden>
+        <button class="nut" id="gk-nut">📤 Tải CSV GOKASA mới</button>
+        <div id="gk-kq" style="margin-top:10px"></div>
+      </div>
       <div class="the">
         <button class="nut phu" id="nut-doimk">Đổi mật khẩu</button>
         <div style="height:10px"></div>
@@ -111,10 +118,11 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 </div>
 
 <script src="lib/supabase.min.js"></script>
+<script src="lib/gokasa.js"></script>
 <script>
 const SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co';
 const SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf';
-const PHIEN_BAN = '2026-10-31b1.1';
+const PHIEN_BAN = '2026-10-31b2a';
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 window.SB = sb; // trang con (nhan.html) dùng chung phiên đăng nhập
 
@@ -136,6 +144,7 @@ function moTab(t) {
   }
   try { localStorage.setItem('tab', t) } catch (e) {}
   if (t === 'gia' || t === 'letak') napCapNhat();
+  if (t === 'toi') hienGokasa();
 }
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => moTab(b.dataset.t));
 
@@ -186,6 +195,38 @@ $('quen').onclick = async () => {
   if (!email) { $('loi-dn').textContent = 'Nhập email trước rồi bấm lại'; return }
   const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
   $('loi-dn').textContent = error ? error.message : 'Đã gửi mail đặt lại mật khẩu, anh/chị mở mail trên điện thoại này.';
+};
+
+// ---- Danh mục GOKASA ----
+window.layGokasa = () => Gokasa.layGokasa(sb); // app nhãn gọi hàm này
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const soVN = n => Number(n).toLocaleString('cs-CZ');
+async function hienGokasa() {
+  const i = await Gokasa.thongTin(sb);
+  $('gk-info').textContent = i ? `${soVN(i.so_ma)} mã · Cập nhật lúc: ${gioPraha(i.luc)}${i.ten_file ? ' · ' + i.ten_file : ''}` : 'Chưa có danh mục trên cloud (app nhãn đang dùng file cũ).';
+}
+$('gk-nut').onclick = () => $('gk-file').click();
+$('gk-file').onchange = async () => {
+  const f = $('gk-file').files[0]; $('gk-file').value = '';
+  if (!f) return;
+  let r;
+  try { r = Gokasa.docCsv(await f.arrayBuffer()) }
+  catch (e) { $('gk-kq').innerHTML = `<p class="loi">⚠ ${esc(e.message)}</p>`; return }
+  const n = Object.keys(r.ds).length, coGia = Object.values(r.ds).filter(x => x.p != null).length;
+  $('gk-kq').innerHTML = `<p><b>${esc(f.name)}</b>: ${soVN(n)} mã, ${soVN(coGia)} mã có giá${r.bo_qua ? `, bỏ qua ${soVN(r.bo_qua)} dòng không có EAN` : ''}.</p>
+    <p class="capnhat">Cột nhận được: EAN = ${esc(r.cot.ean)} · Tên = ${esc(r.cot.ten)} · Giá bán = ${esc(r.cot.gia)} · Nhóm = ${esc(r.cot.nhom)} · Đơn vị = ${esc(r.cot.dv)}</p>
+    <p class="capnhat">Ví dụ: ${r.mau.map(([m, x]) => `${esc(m)} – ${esc(x.n)} – ${x.p != null ? esc(x.p) + ' Kč' : 'không giá'}`).join('<br>')}</p>
+    <button class="nut" id="gk-ok">✔ Đúng rồi, lưu lên cloud</button>`;
+  $('gk-ok').onclick = async () => {
+    if (!navigator.onLine) { alert('Cần có mạng để lưu lên cloud'); return }
+    $('gk-ok').disabled = true; $('gk-ok').textContent = 'Đang lưu…';
+    try {
+      await Gokasa.taiLen(sb, r.ds, f.name);
+      $('gk-kq').innerHTML = `<p style="color:var(--xanh);font-weight:700">✔ Đã lưu ${soVN(n)} mã. Mở lại tab Nhãn để dùng bản mới.</p>`;
+      const fr = $('t-nhan').firstChild; if (fr) fr.remove(); // tab Nhãn tải lại với dữ liệu mới
+      hienGokasa();
+    } catch (e) { $('gk-ok').disabled = false; $('gk-ok').textContent = '✔ Thử lưu lại'; alert('Không lưu được: ' + (e.message || e)) }
+  };
 };
 
 $('nut-doimk').onclick = () => hien('doi-mk');
