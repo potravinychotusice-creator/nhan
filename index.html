@@ -11,6 +11,7 @@
 <style>
 :root{--xanh:#1f6b3a;--xanh2:#e6f1ea;--nen:#f7f5f0;--chu:#1a1a1a;--mo:#6b6b6b;--do:#c8102e;--vien:#ddd8cc;--the:#fff}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%}
 body{font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--nen);color:var(--chu);display:flex;flex-direction:column;
   padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
@@ -113,7 +114,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 <script>
 const SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co';
 const SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf';
-const PHIEN_BAN = '2026-10-31b1';
+const PHIEN_BAN = '2026-10-31b1.1';
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 window.SB = sb; // trang con (nhan.html) dùng chung phiên đăng nhập
 
@@ -207,9 +208,12 @@ sb.auth.onAuthStateChange((ev, session) => {
   if (daVao) return;
   daVao = true;
   hien('app');
-  let t = 'nhan'; try { t = localStorage.getItem('tab') || 'nhan' } catch (e) {}
-  moTab(TEN_TAB[t] ? t : 'nhan');
-  napHoSo(session.user);
+  // Gọi Supabase sau khi đăng nhập xong hẳn (gọi ngay trong lúc này sẽ bị treo)
+  setTimeout(() => {
+    let t = 'nhan'; try { t = localStorage.getItem('tab') || 'nhan' } catch (e) {}
+    moTab(TEN_TAB[t] ? t : 'nhan');
+    napHoSo(session.user);
+  }, 0);
 });
 
 function mang() { $('mang').hidden = navigator.onLine }
