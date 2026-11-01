@@ -75,7 +75,20 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     + '.camov video{width:min(560px,94vw);max-height:62vh;border-radius:12px;background:#000;object-fit:cover}'
     + '.camov .kh{position:absolute;width:min(420px,76vw);height:120px;border:3px solid #5fd3a6;border-radius:10px;pointer-events:none;top:calc(50% - 90px)}'
     + '.camov .goi{color:#fff;font-size:15px}.camov .nut2{display:flex;gap:10px}'
-    + '.camov button{font:700 17px system-ui;min-height:50px;padding:0 20px;border-radius:12px;border:0;background:#fff;color:#1a1a1a}</style>';
+    + '.camov button{font:700 17px system-ui;min-height:50px;padding:0 20px;border-radius:12px;border:0;background:#fff;color:#1a1a1a}'
+    // Gọn cho điện thoại: chỉ dòng nhập dính trên cùng, kết quả nằm trong trang, lọc vào menu ☰
+    + 'header h1,#dock,.scan label{display:none!important}.wrap{padding-block:0 24px!important;gap:10px!important}'
+    + '.scan{position:sticky!important;top:0;z-index:30;border-width:0 0 2px!important;border-radius:0!important;margin:0 -16px;padding:8px 16px!important;box-shadow:0 3px 10px rgba(0,0,0,.12)}'
+    + '.scanrow{flex-wrap:nowrap!important}.scanrow #q{flex:1;min-width:0}'
+    + '#ans{max-height:none!important;overflow:visible!important}#ans:empty{display:none}'
+    + '#menu{font-size:22px;padding:0 13px;margin-left:6px;position:relative}#menu b{position:absolute;top:2px;right:3px;font-size:10px;background:#c8102e;color:#fff;border-radius:9px;padding:0 4px}'
+    + '#locdang{font-size:.85rem;color:var(--muted);margin:0}#locdang b{color:var(--fg)}'
+    + '#ngan{position:fixed;inset:0;z-index:2147483500;background:rgba(0,0,0,.35);display:flex;justify-content:flex-end}#ngan[hidden]{display:none}'
+    + '#ngan .tu{background:var(--bg,#fff);width:min(420px,92vw);height:100%;overflow:auto;padding:14px 16px 30px;display:flex;flex-direction:column;gap:12px;box-shadow:-6px 0 24px rgba(0,0,0,.2)}'
+    + '#ngan .dau{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:1.1rem}#ngan .dau button{font-size:26px;border:0;background:none;width:44px;height:44px}'
+    + '#ngan h3{margin:6px 0 0;font-size:.9rem;color:var(--muted)}#ngan .seg button{padding:9px 12px;font-size:.95rem}'
+    + '#ngan .dock2{display:flex;flex-direction:column;gap:8px}#ngan .dock2 button{min-height:46px;font-size:1rem;border-radius:10px}'
+    + '#sheet{bottom:0!important;z-index:2147483550!important}</style>';
   const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<script>(' + lop.toString() + ')()<\/script>' + css;
   const a = html.indexOf('<title>'), b = html.indexOf('</title>');
@@ -189,7 +202,46 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'cam'; b.textContent = '📷'; b.title = 'Quét mã bằng camera'; b.setAttribute('aria-label', 'Quét mã bằng camera');
       b.onclick = camTrucTiep; go.after(b);
       const q = document.getElementById('q'); if (q && matchMedia('(pointer:coarse)').matches) q.removeAttribute('autofocus'); // điện thoại: không tự bật bàn phím
+      xepGon();
     });
+    // Kết quả tìm ra khỏi khung dính; nút lọc + Báo sai + List siêu thị vào ngăn kéo ☰
+    function xepGon() {
+      const $ = id => document.getElementById(id), scan = document.querySelector('.scan');
+      const ans = $('ans'), st = $('st'), sel = $('sel'), mode = $('mode'), f = $('f'), dock = $('dock');
+      if (!scan || !ans) return;
+      scan.after(st, ans);
+      const nm = document.createElement('button'); nm.type = 'button'; nm.className = 'btn'; nm.id = 'menu'; nm.innerHTML = '☰'; nm.title = 'Lọc / tuỳ chọn';
+      ($('cam') || $('go')).after(nm);
+      const ng = document.createElement('div'); ng.id = 'ngan'; ng.hidden = true;
+      ng.innerHTML = '<div class="tu" role="dialog" aria-label="Lọc"><div class="dau"><span>Lọc hàng đã mua</span><button type="button" data-dong aria-label="Đóng">×</button></div>'
+        + '<h3>Nơi rẻ nhất</h3><div data-o="sel"></div><div data-o="leg"></div><h3>Xem</h3><div data-o="mode"></div><h3>Lọc theo tên</h3><div data-o="f"></div><h3>Khác</h3><div class="dock2" data-o="dock"></div></div>';
+      document.body.appendChild(ng);
+      const dat = (k, el) => { if (el) ng.querySelector('[data-o=' + k + ']').appendChild(el) };
+      const barSel = sel && sel.closest('.bar'), barMode = mode && mode.closest('.bar');
+      dat('sel', sel); dat('leg', document.querySelector('.legend')); dat('mode', mode); dat('f', f);
+      if (barSel) barSel.remove(); if (barMode) barMode.remove();
+      if (dock) [...dock.children].forEach(b => dat('dock', b));
+      if (f) { f.style.width = '100%'; f.style.minHeight = '44px' }
+      const loc = document.createElement('p'); loc.id = 'locdang';
+      const h2 = [...document.querySelectorAll('h2')].find(h => /Hàng anh đã mua/.test(h.textContent));
+      if (h2) h2.after(loc);
+      const capNhat = () => {
+        const on = [...ng.querySelectorAll('[aria-pressed=true]')].map(b => b.firstChild ? b.firstChild.textContent.trim() : b.textContent.trim()).filter(Boolean);
+        const fv = f && f.value.trim();
+        loc.innerHTML = 'Đang xem: <b>' + (on.join(' · ') || 'Tất cả') + '</b>' + (fv ? ' · tên “' + fv.replace(/</g, '&lt;') + '”' : '') + ' – bấm ☰ để đổi';
+        const n = [...ng.querySelectorAll('.dock2 b')].reduce((a, b) => a + (b.closest('button[hidden]') ? 0 : +b.textContent || 0), 0);
+        nm.innerHTML = '☰' + (n ? '<b>' + n + '</b>' : '');
+      };
+      const mo = () => { ng.hidden = false; capNhat() }, dong = () => { ng.hidden = true; capNhat() };
+      nm.onclick = mo;
+      ng.addEventListener('click', e => {
+        if (e.target === ng || e.target.closest('[data-dong]')) return dong();
+        if (e.target.closest('.seg button, .dock2 button')) setTimeout(dong, 120);
+      });
+      if (f) f.addEventListener('keydown', e => { if (e.key === 'Enter') dong() });
+      new MutationObserver(capNhat).observe(ng, { subtree: true, attributes: true, attributeFilter: ['aria-pressed', 'hidden'], childList: true });
+      capNhat();
+    }
 
     // F5: hôm nay đã quét đủ thì không quét lại (đỡ gửi nhiều lệnh vào web NCC)
     const ngay = t => new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague' });

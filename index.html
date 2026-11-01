@@ -29,8 +29,10 @@ label{display:block;font-weight:600;margin:14px 0 6px}
 #dang-nhap p{margin:0 0 10px;color:var(--mo)}
 .lienket{background:none;border:0;color:var(--xanh);text-decoration:underline;padding:12px 0;width:100%;cursor:pointer}
 #app{flex:1;display:flex;flex-direction:column;min-height:0}
-header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--xanh);color:#fff}
-header b{font-size:19px;flex:1}
+header{display:flex;align-items:center;gap:6px;padding:4px 12px 4px 4px;background:var(--xanh);color:#fff;position:relative;z-index:50}
+header b{font-size:18px;flex:1}
+#mo-menu{border:0;background:none;color:#fff;font-size:26px;width:48px;height:44px;cursor:pointer;border-radius:10px}
+#mo-menu[aria-expanded=true]{background:#fff3}
 #mang{font-size:13px;background:#fff3;border-radius:20px;padding:3px 10px}
 main{flex:1;min-height:0;position:relative}
 .trang{position:absolute;inset:0;overflow:auto;padding:16px}
@@ -40,9 +42,13 @@ main{flex:1;min-height:0;position:relative}
 .the{background:var(--the);border:1px solid var(--vien);border-radius:14px;padding:16px;margin-bottom:14px}
 .the h2{margin:0 0 8px;font-size:20px}
 .capnhat{font-size:14px;color:var(--mo)}
-nav{display:flex;background:#fff;border-top:1px solid var(--vien)}
-nav button{flex:1;border:0;background:none;padding:8px 2px 10px;min-height:64px;font-size:13px;font-weight:600;color:var(--mo);cursor:pointer}
-nav button span{display:block;font-size:24px;line-height:1.2}
+/* Menu tab: ẩn, bấm ☰ mới hiện (dành chỗ màn hình cho nội dung) */
+nav{position:absolute;top:52px;left:8px;z-index:60;display:flex;flex-direction:column;background:#fff;border:1px solid var(--vien);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);overflow:hidden;min-width:220px}
+nav[hidden]{display:none}
+#man-che{position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.25)}
+nav button{display:flex;align-items:center;gap:12px;border:0;background:none;padding:0 18px;min-height:56px;font-size:17px;font-weight:600;color:var(--chu);cursor:pointer;text-align:left}
+nav button+button{border-top:1px solid var(--vien)}
+nav button span{font-size:24px;width:30px;text-align:center}
 nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 </style>
 </head>
@@ -73,7 +79,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 </section>
 
 <div id="app" hidden>
-  <header><b id="tieu-de">Nhãn</b><span id="mang" hidden>Mất mạng</span></header>
+  <header><button id="mo-menu" aria-label="Menu" aria-expanded="false" aria-controls="menu-tab">☰</button><b id="tieu-de">Nhãn</b><span id="mang" hidden>Mất mạng</span></header>
   <main>
     <section class="trang" id="t-nhan"></section>
     <section class="trang" id="t-gia" hidden></section>
@@ -105,7 +111,8 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
       <p class="capnhat" id="phien-ban"></p>
     </section>
   </main>
-  <nav>
+  <div id="man-che" hidden></div>
+  <nav id="menu-tab" hidden>
     <button data-t="nhan"><span>🏷️</span>Nhãn</button>
     <button data-t="gia"><span>💰</span>Check giá</button>
     <button data-t="letak"><span>📰</span>Leták</button>
@@ -118,7 +125,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 <script>
 const SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co';
 const SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf';
-const PHIEN_BAN = '2026-11-01b3b';
+const PHIEN_BAN = '2026-11-01b3c';
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 window.SB = sb; // trang con (nhan.html) dùng chung phiên đăng nhập
 
@@ -158,7 +165,10 @@ async function moGia() {
     if (m.luc !== cg.man.luc) o.firstChild.src = 'gia.html'; // có giá mới → mở lại
   } catch (e) {}
 }
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => moTab(b.dataset.t));
+function menu(mo) { $('menu-tab').hidden = !mo; $('man-che').hidden = !mo; $('mo-menu').setAttribute('aria-expanded', mo) }
+$('mo-menu').onclick = () => menu($('menu-tab').hidden);
+$('man-che').onclick = () => menu(false);
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => { menu(false); moTab(b.dataset.t) });
 
 function gioPraha(iso) {
   return new Date(iso).toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });

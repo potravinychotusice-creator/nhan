@@ -1,5 +1,5 @@
 // Chạy offline: lấy bản mới khi có mạng, mất mạng thì dùng bản đã lưu.
-const KHO = 'cuahang-v6';
+const KHO = 'cuahang-v7';
 const SAN = ['./', 'index.html', 'nhan.html', 'gia.html', 'lib/supabase.min.js', 'lib/gokasa.js', 'manifest.json', 'icons/icon-192.png', 'icons/favicon.png'];
 
 self.addEventListener('install', e => {
