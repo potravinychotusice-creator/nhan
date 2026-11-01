@@ -88,7 +88,14 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     + '#ngan .dau{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:1.1rem}#ngan .dau button{font-size:26px;border:0;background:none;width:44px;height:44px}'
     + '#ngan h3{margin:6px 0 0;font-size:.9rem;color:var(--muted)}#ngan .seg button{padding:9px 12px;font-size:.95rem}'
     + '#ngan .dock2{display:flex;flex-direction:column;gap:8px}#ngan .dock2 button{min-height:46px;font-size:1rem;border-radius:10px}'
-    + '#sheet{bottom:0!important;z-index:2147483550!important}</style>';
+    + '#sheet{bottom:0!important;z-index:2147483550!important}'
+    // Dòng hàng trên điện thoại: thẻ giá tự xuống dòng (không kéo ngang), ẩn ô "—", rẻ nhất + đang mua lên đầu; bấm ô → hiện tên món ở nơi đó
+    + '@media (max-width:760px){.row{display:flex!important;flex-wrap:wrap;gap:5px;padding:8px 10px!important}.row .c1{flex:1 1 100%;order:-3}'
+    + '.row .pc{flex:0 1 auto;display:flex;flex-wrap:wrap;align-items:center;gap:2px 5px;border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 9px!important;background:var(--panel);max-width:100%}'
+    + '.row .pc.none{display:none!important}.row .pc.cur{order:-2;outline:0;border-style:dashed}.row .pc.best{order:-1;border-color:var(--accent)}'
+    + '.row .pc .lab{display:inline!important;font-size:.75rem;color:var(--muted);font-weight:600}.row .pc .num{font-size:.95rem}'
+    + '.row .pc .m{display:none!important;flex:1 1 100%}.row .pc.mo .m{display:block!important;-webkit-line-clamp:3}.row .pc.mo{border-radius:10px}'
+    + '.row .pc .go-l.mini{margin:0}.row .pc .num .ok{position:static!important;margin-left:3px}.row .th{width:44px;height:44px}}</style>';
   const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<script>(' + lop.toString() + ')()<\/script>' + css;
   const a = html.indexOf('<title>'), b = html.indexOf('</title>');
@@ -203,6 +210,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       b.onclick = camTrucTiep; go.after(b);
       const q = document.getElementById('q'); if (q && matchMedia('(pointer:coarse)').matches) q.removeAttribute('autofocus'); // điện thoại: không tự bật bàn phím
       xepGon(); tuTim();
+      document.addEventListener('click', e => { const pc = e.target.closest && e.target.closest('.row .pc'); if (pc && !e.target.closest('a,button')) pc.classList.toggle('mo') });
       const st = document.getElementById('st');
       if (st) { const an = () => { st.hidden = /^Sẵn sàng/.test(st.textContent.trim()) }; new MutationObserver(an).observe(st, { childList: true, characterData: true, subtree: true }); an() }
     });
