@@ -16,7 +16,7 @@ SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf'
 BUCKET = 'checkgia'
 ENV = os.path.expanduser('~/.config/cuahang/may.env')
 FILES = ['index.html', 'data/cat.json', 'data/deals.json', 'data/dod_img.json',
-         'data/letak.json', 'data/report_replies.json']
+         'data/letak.json', 'data/report_replies.json', 'data/akce_unikom.json']
 
 
 def req(method, path, body=None, headers=None, token=None, timeout=300):

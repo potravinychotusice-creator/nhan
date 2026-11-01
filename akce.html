@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Akce Unikom</title>
+<style>
+:root{--n:#f7f5f0;--c:#fff;--x:#1f6b3a;--xn:#e6f1ea;--d:#c8102e;--m:#6b6b6b;--v:#e3dfd6;--cam:#b45309}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--n);color:#1a1a1a;padding-bottom:120px}
+.tren{position:sticky;top:0;z-index:5;background:var(--n);padding:8px 10px 6px;border-bottom:1px solid var(--v)}
+.hang{display:flex;gap:6px}
+input[type=search]{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--v);border-radius:10px;background:var(--c)}
+select{font:inherit;font-size:15px;padding:8px;border:1px solid var(--v);border-radius:10px;background:var(--c);max-width:44%}
+.chip{display:flex;gap:6px;overflow-x:auto;padding-top:6px;scrollbar-width:none}
+.chip button{flex:none;font:inherit;font-size:13px;border:1px solid var(--v);background:var(--c);border-radius:99px;padding:4px 10px;white-space:nowrap}
+.chip button[aria-pressed=true]{background:var(--x);color:#fff;border-color:var(--x)}
+.tt{font-size:12px;color:var(--m);padding:4px 10px}
+.nhom{font-weight:700;font-size:13px;color:var(--x);padding:10px 10px 2px}
+.mon{display:flex;gap:8px;align-items:center;background:var(--c);border-bottom:1px solid var(--v);padding:8px 10px}
+.mon.chon{background:var(--xn)}
+.tr{flex:1;min-width:0}
+.ten{font-weight:600;overflow-wrap:anywhere}
+.ph{font-size:12px;color:var(--m)}
+.gia{font-weight:700;white-space:nowrap}
+.ok{color:var(--x);font-size:12px}
+.canh{color:var(--cam);font-size:12px}
+.sl{display:flex;align-items:center;gap:2px;flex:none}
+.sl button{width:34px;height:34px;border:1px solid var(--v);border-radius:9px;background:var(--c);font-size:18px;line-height:1}
+.sl input{width:38px;height:34px;text-align:center;font:inherit;font-size:16px;border:1px solid var(--v);border-radius:9px}
+.duoi{position:fixed;left:0;right:0;bottom:0;background:var(--c);border-top:1px solid var(--v);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:6px;align-items:center;z-index:6}
+.duoi .tong{flex:1;font-size:13px}
+.duoi button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:10px 12px;background:var(--x);color:#fff}
+.duoi button.phu{background:var(--xn);color:var(--x)}
+.them{display:block;margin:12px auto;font:inherit;padding:10px 16px;border:1px solid var(--v);border-radius:10px;background:var(--c)}
+#bao{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:10px;font-size:14px;display:none;z-index:9}
+.loi{color:var(--d);padding:20px;text-align:center}
+</style>
+</head>
+<body>
+<div class="tren">
+  <div class="hang"><input type="search" id="q" placeholder="Tìm tên, hãng, mã…" autocomplete="off">
+    <select id="loc" aria-label="Lọc">
+      <option value="">Tất cả</option><option value="dang">Đang chạy</option><option value="sap">⏳ Sắp tới</option>
+      <option value="re">Unikom rẻ nhất</option><option value="chon">✓ Đã chọn</option></select></div>
+  <div class="chip" id="lt"></div>
+</div>
+<div class="tt" id="tt">Đang tải…</div>
+<div id="ds"></div>
+<div class="duoi"><div class="tong" id="tong">Chưa chọn món nào</div>
+  <button class="phu" id="xoa">Xoá</button><button class="phu" id="chep">📋 Chép</button><button id="gui">📤 Gửi</button></div>
+<div id="bao"></div>
+<script>
+(async () => {
+  const P = window.parent, sb = P && P.SB, $ = id => document.getElementById(id);
+  const bao = s => { const b = $('bao'); b.textContent = s; b.style.display = 'block'; clearTimeout(bao.t); bao.t = setTimeout(() => b.style.display = 'none', 2200) };
+  const loi = s => { $('tt').innerHTML = '<div class="loi">' + s + '</div>' };
+  if (!sb) { loi('Mở từ app Cửa hàng'); return }
+  const cache = await caches.open('cuahang-checkgia').catch(() => null);
+  const gunzip = async blob => await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  const F = 'data/akce_unikom.json';
+  let D;
+  try {
+    let man;
+    try { const { data, error } = await sb.storage.from('checkgia').download('manifest.json'); if (error) throw error; man = JSON.parse(await data.text()) }
+    catch (e) { const r = cache && await cache.match('/_cg/akce@last'); if (!r) throw e; D = JSON.parse(await r.text()) }
+    if (!D) {
+      const f = man.files[F]; if (!f) { loi('Chưa có danh sách akce trên cloud'); return }
+      const k = '/_cg/' + F + '@' + f.sha; let r = cache && await cache.match(k), v;
+      if (r) v = await r.text();
+      else { const { data, error } = await sb.storage.from('checkgia').download(F + '.gz'); if (error) throw error; v = await gunzip(data); try { await cache.put(k, new Response(v)); await cache.put('/_cg/akce@last', new Response(v)) } catch (e) {} }
+      D = JSON.parse(v);
+    }
+  } catch (e) { loi('Không tải được: ' + (e.message || e)); return }
+
+  const LT = D.letak, hom = new Date().toISOString().slice(0, 10);
+  const nd = s => { const [y, m, d] = s.split('-'); return +d + '.' + +m + '.' };
+  const kc = x => (Math.round(x * 100) / 100).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const khoa = d => LT[d[0]].ten + '|' + (d[1] || d[4]);
+  const bo = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  D.ds.forEach(d => d.s = bo(d[2] + ' ' + d[3] + ' ' + d[1] + ' ' + d[4]));
+
+  // Số thùng đã chọn: lưu chung (tai_lieu bo=don_akce id=unikom) → điện thoại & máy tính thấy như nhau
+  let SL = {}, ver = 0, hen;
+  try { SL = JSON.parse(localStorage.getItem('don_akce') || '{}') } catch (e) {}
+  try { const { data } = await sb.from('tai_lieu').select('data').eq('bo', 'don_akce').eq('id', 'unikom').maybeSingle(); if (data && data.data && data.data.sl) SL = data.data.sl } catch (e) {}
+  const luu = () => {
+    try { localStorage.setItem('don_akce', JSON.stringify(SL)) } catch (e) {}
+    clearTimeout(hen); hen = setTimeout(async () => { try { await sb.from('tai_lieu').upsert({ bo: 'don_akce', id: 'unikom', data: { sl: SL } }) } catch (e) {} }, 800);
+  };
+
+  let ltChon = -1, gioiHan = 150;
+  const chip = () => {
+    $('lt').innerHTML = ['<button data-i="-1" aria-pressed="' + (ltChon < 0) + '">Mọi leták</button>'].concat(LT.map((l, i) =>
+      '<button data-i="' + i + '" aria-pressed="' + (ltChon === i) + '">' + (l.tu > hom ? '⏳ ' : '') + l.ten + ' · ' + nd(l.tu) + '–' + nd(l.den) + '</button>')).join('');
+  };
+  $('lt').onclick = e => { const b = e.target.closest('button'); if (!b) return; ltChon = +b.dataset.i; gioiHan = 150; chip(); ve() };
+
+  function loc() {
+    const q = bo($('q').value.trim()).split(/\s+/).filter(Boolean), l = $('loc').value;
+    return D.ds.filter(d => {
+      if (ltChon >= 0 && d[0] !== ltChon) return false;
+      const lt = LT[d[0]];
+      if (l === 'dang' && lt.tu > hom) return false;
+      if (l === 'sap' && lt.tu <= hom) return false;
+      if (l === 're' && d[9]) return false;
+      if (l === 'chon' && !SL[khoa(d)]) return false;
+      return q.every(w => d.s.includes(w));
+    });
+  }
+  function dong(d) {
+    const k = khoa(d), n = SL[k] || 0, lai = d[7] ? Math.round((d[7] - d[6]) / d[7] * 100) : null;
+    const so = d[9] ? '<div class="canh">⚠ ' + d[9][0] + ' rẻ hơn: ' + kc(d[9][1]) + '</div>'
+      : (d[10] ? '<div class="ok">✓ rẻ nhất (nơi khác ' + kc(d[10]) + ')</div>' : '');
+    return '<div class="mon' + (n ? ' chon' : '') + '" data-k="' + k + '"><div class="tr"><div class="ten">' + esc(d[2]) + '</div>'
+      + '<div class="ph">' + esc(d[3].replace(/,? ?(s\.r\.o\.|a\.s\.|spol\..*)$/i, '')) + ' · mã ' + (d[1] || '–') + ' · ' + (d[8] || '?') + ' ks/krt</div>' + so + '</div>'
+      + '<div style="text-align:right"><div class="gia">' + kc(d[6]) + '</div><div class="ph">' + (d[7] ? 'APC ' + kc(d[7]) + (lai != null ? ' · ' + lai + '%' : '') : '') + '</div></div>'
+      + '<div class="sl"><button data-b="-1" aria-label="Bớt">−</button><input inputmode="numeric" value="' + (n || '') + '" aria-label="Số thùng"><button data-b="1" aria-label="Thêm">+</button></div></div>';
+  }
+  const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function ve() {
+    const r = loc(); let h = '', g = -1;
+    r.slice(0, gioiHan).forEach(d => {
+      if (d[0] !== g) { g = d[0]; const l = LT[g]; h += '<div class="nhom">' + (l.tu > hom ? '⏳ ' : '') + l.ten + ' · ' + l.hl + '</div>' }
+      h += dong(d);
+    });
+    if (r.length > gioiHan) h += '<button class="them" id="them">Xem thêm ' + Math.min(300, r.length - gioiHan) + ' món (còn ' + (r.length - gioiHan) + ')</button>';
+    $('ds').innerHTML = h || '<div class="tt">Không có món nào</div>';
+    $('tt').textContent = r.length + ' món akce Unikom · giá nhập s DPH /ks · cập nhật ' + D.luc.slice(8, 10) + '.' + D.luc.slice(5, 7) + ' · không gồm hàng đặt thẳng hãng, Coca-Cola';
+    tong();
+  }
+  function tong() {
+    let m = 0, t = 0;
+    for (const d of D.ds) { const n = SL[khoa(d)]; if (n) { m++; t += n * (d[8] || 1) * d[6] } }
+    $('tong').textContent = m ? 'Đã chọn ' + m + ' món · ~' + Math.round(t).toLocaleString('cs-CZ') + ' Kč s DPH' : 'Chưa chọn món nào';
+  }
+  const datSL = (el, n) => {
+    const k = el.dataset.k; n = Math.max(0, Math.min(999, n | 0));
+    if (n) SL[k] = n; else delete SL[k];
+    el.querySelector('input').value = n || ''; el.classList.toggle('chon', !!n); luu(); tong();
+  };
+  $('ds').onclick = e => {
+    if (e.target.id === 'them') { gioiHan += 300; ve(); return }
+    const b = e.target.closest('button[data-b]'); if (!b) return;
+    const el = b.closest('.mon'); datSL(el, (SL[el.dataset.k] || 0) + +b.dataset.b);
+  };
+  $('ds').onchange = e => { if (e.target.tagName === 'INPUT') datSL(e.target.closest('.mon'), +e.target.value) };
+  let tq; $('q').oninput = () => { clearTimeout(tq); tq = setTimeout(() => { gioiHan = 150; ve() }, 200) };
+  $('loc').onchange = () => { gioiHan = 150; ve() };
+
+  function vanBan() {
+    const nh = {}; let t = 0;
+    for (const d of D.ds) { const n = SL[khoa(d)]; if (!n) continue; (nh[d[0]] = nh[d[0]] || []).push([d, n]); t += n * (d[8] || 1) * d[6] }
+    const ks = Object.keys(nh); if (!ks.length) return '';
+    return 'Objednávka akce Unikom – Potraviny Chotusice\n\n' + ks.map(i => LT[i].ten + ' (' + LT[i].hl + ')\n' +
+      nh[i].map(([d, n]) => (d[1] || d[4]) + '  ' + d[2] + '  ' + n + ' krt' + (d[8] ? ' (' + n * d[8] + ' ks)' : '')).join('\n')).join('\n\n');
+  }
+  $('chep').onclick = async () => { const s = vanBan(); if (!s) return bao('Chưa chọn món nào'); try { await navigator.clipboard.writeText(s); bao('Đã chép danh sách') } catch (e) { prompt('Chép đoạn này:', s) } };
+  $('gui').onclick = async () => {
+    const s = vanBan(); if (!s) return bao('Chưa chọn món nào');
+    if (navigator.share) { try { await navigator.share({ title: 'Objednávka akce Unikom', text: s }) } catch (e) {} }
+    else location.href = 'mailto:?subject=' + encodeURIComponent('Objednávka akce Unikom') + '&body=' + encodeURIComponent(s);
+  };
+  $('xoa').onclick = () => { if (!Object.keys(SL).length) return; if (confirm('Xoá hết số lượng đã chọn?')) { SL = {}; luu(); ve() } };
+  chip(); ve();
+})();
+</script>
+</body>
+</html>
