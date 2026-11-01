@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Check giá</title>
+<style>
+body{margin:0;font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f7f5f0;color:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;box-sizing:border-box;text-align:center}
+.hop{max-width:420px}
+.vong{width:42px;height:42px;border:4px solid #e6f1ea;border-top-color:#1f6b3a;border-radius:50%;margin:0 auto 14px;animation:q 1s linear infinite}
+@keyframes q{to{transform:rotate(360deg)}}
+.mo{color:#6b6b6b;font-size:14px}
+.loi{color:#c8102e}
+button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;background:#1f6b3a;color:#fff;font-weight:700;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="hop"><div class="vong" id="vong"></div><div id="tt">Đang mở Check giá…</div><div class="mo" id="ct"></div></div>
+<script>
+// Trang Check giá thật (có giá nhập) nằm trong kho kín Supabase "checkgia" – chỉ tải được sau khi đăng nhập.
+// File này chỉ tải về, giữ trên máy (dùng khi mất mạng) rồi mở ra; chức năng của Claude (db, F5) đổi sang Supabase.
+(async () => {
+  const P = window.parent, sb = P && P.SB, KHO = 'cuahang-checkgia', $ = id => document.getElementById(id);
+  const tt = s => $('tt').textContent = s, ct = s => $('ct').textContent = s;
+  const loi = (s, nut) => { $('vong').hidden = true; $('tt').innerHTML = '<span class="loi">' + s + '</span>'; ct('');
+    if (nut) { const b = document.createElement('button'); b.textContent = 'Thử lại'; b.onclick = () => location.reload(); $('tt').after(b) } };
+  if (!sb) { loi('Mở Check giá từ app Cửa hàng'); return }
+
+  const cache = await caches.open(KHO).catch(() => null);
+  const docMay = async k => { try { const r = cache && await cache.match('/_cg/' + k); return r ? await r.text() : null } catch (e) { return null } };
+  const luuMay = async (k, v) => { try { cache && await cache.put('/_cg/' + k, new Response(v)) } catch (e) {} };
+  const gunzip = async blob => await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+
+  // 1. Mục lục trên cloud (nhỏ); mất mạng → bản trên máy
+  let man = null, manMay = null;
+  try { manMay = JSON.parse(await docMay('manifest.json') || 'null') } catch (e) {}
+  try {
+    const { data, error } = await sb.storage.from('checkgia').download('manifest.json');
+    if (error) throw error;
+    man = JSON.parse(await data.text());
+  } catch (e) {
+    if (!manMay) { loi(navigator.onLine ? 'Chưa có giá trên cloud (' + (e.message || e) + ')' : 'Mất mạng và máy này chưa tải Check giá lần nào', true); return }
+    man = manMay;
+  }
+
+  // 2. Tải file nào đổi (lần đầu ~5 MB), còn lại lấy trên máy
+  const F = {}, ten = Object.keys(man.files);
+  let i = 0;
+  for (const f of ten) {
+    i++;
+    const sha = man.files[f].sha, k = f + '@' + sha;
+    let v = await docMay(k);
+    if (v == null) {
+      tt('Đang tải giá mới… ' + i + '/' + ten.length); ct(f.replace('data/', '') + ' · ' + Math.round(man.files[f].size / 1024) + ' KB');
+      try {
+        const { data, error } = await sb.storage.from('checkgia').download(f + '.gz');
+        if (error) throw error;
+        v = await gunzip(data);
+        await luuMay(k, v);
+        if (manMay && manMay.files[f] && manMay.files[f].sha !== sha) try { await cache.delete('/_cg/' + f + '@' + manMay.files[f].sha) } catch (e) {}
+      } catch (e) { loi('Không tải được ' + f + ': ' + (e.message || e), true); return }
+    }
+    F[f] = v;
+  }
+  await luuMay('manifest.json', JSON.stringify(man));
+  P.__CG = { files: F, man, at: Date.now() };
+
+  // 3. Mở trang: chèn lớp thay thế (db/mcp/fetch) trước code của trang
+  let html = F['index.html'] || '';
+  // Khung "🎙 Hỏi Claude" (voice.js) cần Claude → chưa dùng trong app
+  html = html.replace(/<script src="voice\.js"[^>]*><\/script>/, '');
+  const css = '<style>#xnav,#bcoop,a.go-l[data-coop]{display:none!important}</style>';
+  const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<script>(' + lop.toString() + ')()<\/script>' + css;
+  const a = html.indexOf('<title>'), b = html.indexOf('</title>');
+  html = a >= 0 ? head + html.slice(a, b + 8) + '</head><body>' + html.slice(b + 8) + '</body></html>' : head + '</head><body>' + html + '</body></html>';
+  document.open(); document.write(html); document.close();
+
+  // ---- chạy bên trong trang Check giá ----
+  function lop() {
+    const P = window.parent, sb = P.SB, F = P.__CG.files, man = P.__CG.man;
+    window.LAN = 1; // ảnh tải thẳng từ web NCC (như bản Wi-Fi)
+    const goc = window.fetch.bind(window);
+    window.fetch = (u, o) => {
+      const s = typeof u === 'string' ? u : (u && u.url) || '';
+      const k = s.replace(location.href.replace(/[^/]*$/, ''), '').replace(/^\.?\//, '').split('?')[0];
+      if (F[k] != null) return Promise.resolve(new Response(F[k], { headers: { 'Content-Type': 'application/json' } }));
+      if (/^data\//.test(k)) return Promise.resolve(new Response('{}', { status: 404 }));
+      return goc(u, o);
+    };
+
+    // db giống window.claude.use('db'): collection(bo).doc(id).set/get/delete, onSnapshot (xem lại mỗi 60 s)
+    const nghe = [];
+    const snapDoc = (id, r) => ({ id, exists: !!r, data: () => r ? r.data : undefined });
+    async function chay(n) {
+      try {
+        let q = sb.from('tai_lieu').select('id,data').eq('bo', n.bo);
+        if (n.id != null) { const { data, error } = await q.eq('id', n.id).maybeSingle(); if (error) throw error; n.cb(snapDoc(n.id, data)) }
+        else { const { data, error } = await q; if (error) throw error; const d = data.map(r => snapDoc(r.id, r)); n.cb({ docs: d, size: d.length, empty: !d.length, forEach: f => d.forEach(f) }) }
+      } catch (e) { n.err && n.err(e) }
+    }
+    const bao = bo => nghe.filter(n => n.bo === bo).forEach(chay);
+    setInterval(() => { if (!document.hidden) nghe.forEach(chay) }, 60000);
+    const doc = (bo, id) => ({
+      id,
+      async get() { const { data, error } = await sb.from('tai_lieu').select('id,data').eq('bo', bo).eq('id', id).maybeSingle(); if (error) throw error; return snapDoc(id, data) },
+      async set(v, o) {
+        let d = v;
+        if (o && o.merge) { const c = await this.get(); d = Object.assign({}, c.exists ? c.data() : {}, v) }
+        const { error } = await sb.from('tai_lieu').upsert({ bo, id, data: d }); if (error) throw error; bao(bo)
+      },
+      async update(v) { return this.set(v, { merge: true }) },
+      async delete() { const { error } = await sb.from('tai_lieu').delete().eq('bo', bo).eq('id', id); if (error) throw error; bao(bo) },
+      onSnapshot(cb, err) { const n = { bo, id, cb, err }; nghe.push(n); chay(n); return () => nghe.splice(nghe.indexOf(n), 1) }
+    });
+    const DB = {
+      collection: bo => ({
+        doc: id => doc(bo, String(id)),
+        async get() { const { data, error } = await sb.from('tai_lieu').select('id,data').eq('bo', bo); if (error) throw error; const d = data.map(r => snapDoc(r.id, r)); return { docs: d, size: d.length, empty: !d.length, forEach: f => d.forEach(f) } },
+        onSnapshot(cb, err) { const n = { bo, id: null, cb, err }; nghe.push(n); chay(n); return () => nghe.splice(nghe.indexOf(n), 1) }
+      }),
+      doc: p => { const i = p.indexOf('/'); return doc(p.slice(0, i), p.slice(i + 1)) }
+    };
+    // mcp: "Claude Code Remote" → chỉ ghi yêu cầu (trang tự ghi status/f5 = requested, máy cửa hàng xem mỗi 15 phút);
+    // Gmail không dùng trong app (đơn COOP để sau ở mục Đặt hàng)
+    const MCP = { callTool: async (sv) => { if (sv === 'Claude Code Remote') return {}; throw Object.assign(new Error('app'), { code: 'app' }) } };
+    window.claude = { use: async n => n === 'db' ? DB : n === 'mcp' ? MCP : null };
+
+    // F5: hôm nay đã quét đủ thì không quét lại (đỡ gửi nhiều lệnh vào web NCC)
+    const ngay = t => new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague' });
+    const gio = t => new Date(t).toLocaleTimeString('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit' });
+    // (trạng thái đọc sẵn để chặn ngay lúc bấm – trang Check giá xử lý cú bấm trước khi kịp hỏi Supabase)
+    let F5 = null; DB.doc('status/f5').onSnapshot(d => { F5 = d.exists ? d.data() : null }, () => {});
+    window.addEventListener('click', e => {
+      const b = e.target.closest && e.target.closest('#f5'); if (!b) return;
+      const s = F5, hn = ngay(Date.now());
+      const xong = s && s.state === 'done' && s.at && ngay(s.at) === hn && !(s.thieu && s.thieu.length);
+      if (xong || (!s && man.luc && ngay(man.luc) === hn)) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        const m = '✓ Hôm nay đã quét lúc ' + gio(xong ? s.at : man.luc) + ' – giá đang mới, không cần quét lại.';
+        const hien = () => { const st = document.getElementById('f5st'); if (st) st.textContent = m };
+        hien(); setTimeout(hien, 1500);
+      }
+    }, true);
+  }
+})();
+</script>
+</body>
+</html>
