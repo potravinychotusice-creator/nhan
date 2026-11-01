@@ -69,7 +69,13 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   let html = F['index.html'] || '';
   // Khung "🎙 Hỏi Claude" (voice.js) cần Claude → chưa dùng trong app
   html = html.replace(/<script src="voice\.js"[^>]*><\/script>/, '');
-  const css = '<style>#xnav,#bcoop,a.go-l[data-coop]{display:none!important}</style>';
+  const css = '<style>#xnav,#bcoop,a.go-l[data-coop]{display:none!important}'
+    + '#cam{font-size:22px;padding:0 14px;margin-left:6px}'
+    + '.camov{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:2147483600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}'
+    + '.camov video{width:min(560px,94vw);max-height:62vh;border-radius:12px;background:#000;object-fit:cover}'
+    + '.camov .kh{position:absolute;width:min(420px,76vw);height:120px;border:3px solid #5fd3a6;border-radius:10px;pointer-events:none;top:calc(50% - 90px)}'
+    + '.camov .goi{color:#fff;font-size:15px}.camov .nut2{display:flex;gap:10px}'
+    + '.camov button{font:700 17px system-ui;min-height:50px;padding:0 20px;border-radius:12px;border:0;background:#fff;color:#1a1a1a}</style>';
   const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<script>(' + lop.toString() + ')()<\/script>' + css;
   const a = html.indexOf('<title>'), b = html.indexOf('</title>');
@@ -125,6 +131,65 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     // Gmail không dùng trong app (đơn COOP để sau ở mục Đặt hàng)
     const MCP = { callTool: async (sv) => { if (sv === 'Claude Code Remote') return {}; throw Object.assign(new Error('app'), { code: 'app' }) } };
     window.claude = { use: async n => n === 'db' ? DB : n === 'mcp' ? MCP : null };
+
+    // 📷 Quét mã bằng camera điện thoại (trang Check giá chỉ có ô cho máy quét USB) – giống tab Nhãn
+    const ZXURL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+    let ZX = null;
+    const napZX = () => ZX ? Promise.resolve(ZX) : new Promise((ok, loi) => { const sc = document.createElement('script'); sc.src = ZXURL; sc.onload = () => (ZX = window.ZXing) ? ok(ZX) : loi(new Error('zxing')); sc.onerror = () => loi(new Error('Không tải được bộ đọc mã (cần mạng)')); document.head.appendChild(sc) });
+    const KIEU = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'];
+    function timMa(c) {
+      try { navigator.vibrate && navigator.vibrate(60) } catch (e) {}
+      const q = document.getElementById('q'); q.value = String(c).trim(); q.blur();
+      document.getElementById('go').click();
+    }
+    function baoSt(t) { const st = document.getElementById('st'); if (st) st.textContent = t }
+    async function camTrucTiep() {
+      const ov = document.createElement('div'); ov.className = 'camov';
+      ov.innerHTML = '<video playsinline muted autoplay></video><div class="kh"></div><div class="goi">Đưa mã vạch vào giữa khung</div><div class="nut2"><button type="button" data-a="anh">📸 Chụp ảnh</button><button type="button" data-a="dong">Đóng</button></div>';
+      document.body.appendChild(ov);
+      const v = ov.querySelector('video'); let st = null, rd = null;
+      const dung = () => { try { st && st.getTracks().forEach(t => t.stop()) } catch (e) {} try { rd && rd.reset() } catch (e) {} ov.remove() };
+      ov.querySelector('[data-a=dong]').onclick = dung;
+      ov.querySelector('[data-a=anh]').onclick = () => { dung(); chupAnh() };
+      const duoc = c => { if (!ov.isConnected) return; dung(); timMa(c) };
+      try {
+        if ('BarcodeDetector' in window) {
+          st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } } }); v.srcObject = st; await v.play();
+          const det = new BarcodeDetector({ formats: KIEU });
+          (async function vong() { if (!ov.isConnected) return; try { const r = await det.detect(v); if (r && r[0]) return duoc(r[0].rawValue) } catch (e) {} setTimeout(vong, 150) })();
+        } else {
+          ov.querySelector('.goi').textContent = 'Đang bật camera…';
+          const Z = await napZX(); rd = new Z.BrowserMultiFormatReader();
+          await rd.decodeFromConstraints({ video: { facingMode: 'environment' } }, v, r => { if (r && r.getText) duoc(r.getText()) });
+          ov.querySelector('.goi').textContent = 'Đưa mã vạch vào giữa khung';
+        }
+      } catch (e) {
+        dung();
+        baoSt(e && e.name === 'NotAllowedError' ? 'Camera bị chặn – anh cho phép Camera cho app (Cài đặt Chrome → Trang web → Camera), tạm dùng chụp ảnh.' : 'Không mở được camera trực tiếp – chuyển sang chụp ảnh.');
+        setTimeout(chupAnh, 600);
+      }
+    }
+    let inAnh = null;
+    function chupAnh() {
+      if (!inAnh) { inAnh = document.createElement('input'); inAnh.type = 'file'; inAnh.accept = 'image/*'; inAnh.setAttribute('capture', 'environment'); inAnh.style.cssText = 'position:fixed;left:-9999px'; document.body.appendChild(inAnh) }
+      inAnh.value = '';
+      inAnh.onchange = async () => {
+        const f = inAnh.files && inAnh.files[0]; if (!f) return; baoSt('Đang đọc mã vạch trong ảnh…');
+        try {
+          let c = null;
+          if ('BarcodeDetector' in window) { const r = await new BarcodeDetector({ formats: KIEU }).detect(await createImageBitmap(f)); c = r && r[0] && r[0].rawValue }
+          if (!c) { const Z = await napZX(), u = URL.createObjectURL(f); try { c = (await new Z.BrowserMultiFormatReader().decodeFromImageUrl(u)).getText() } catch (e) {} URL.revokeObjectURL(u) }
+          if (c) timMa(c); else baoSt('Không đọc được mã – chụp lại cho mã vạch to, nét, không chói; hoặc gõ số in dưới mã.');
+        } catch (e) { baoSt('Lỗi đọc ảnh: ' + (e.message || e)) }
+      };
+      inAnh.click();
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const go = document.getElementById('go'); if (!go || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'cam'; b.textContent = '📷'; b.title = 'Quét mã bằng camera'; b.setAttribute('aria-label', 'Quét mã bằng camera');
+      b.onclick = camTrucTiep; go.after(b);
+      const q = document.getElementById('q'); if (q && matchMedia('(pointer:coarse)').matches) q.removeAttribute('autofocus'); // điện thoại: không tự bật bàn phím
+    });
 
     // F5: hôm nay đã quét đủ thì không quét lại (đỡ gửi nhiều lệnh vào web NCC)
     const ngay = t => new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague' });
