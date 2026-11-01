@@ -114,7 +114,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
         <div id="gk-kq" style="margin-top:10px"></div>
       </div>
       <div class="the" id="ncc-the" hidden><h2>Tài khoản nhà cung cấp</h2>
-        <p class="capnhat">Nhập 1 lần để máy cửa hàng tự đăng nhập và lấy giá mỗi sáng. Mật khẩu được khoá ngay trên máy này, chỉ máy tính cửa hàng mở được – Supabase, nhân viên, Claude đều không đọc được.</p>
+        <p class="capnhat">Mật khẩu chỉ nhập trên <b>máy tính cửa hàng</b>: bấm biểu tượng <b>“Mật khẩu NCC”</b> trên màn hình (không lên mạng). Mỗi sáng máy tự đăng nhập lấy giá; ở đây xem kết quả.</p>
         <div id="ncc-ds"></div>
       </div>
       <div class="the">
@@ -140,7 +140,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 <script>
 const SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co';
 const SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf';
-const PHIEN_BAN = '2026-11-01b3f';
+const PHIEN_BAN = '2026-11-01b3g';
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 window.SB = sb; // trang con (nhan.html) dùng chung phiên đăng nhập
 
@@ -266,41 +266,16 @@ $('gk-file').onchange = async () => {
   };
 };
 
-// ---- Tài khoản nhà cung cấp (chỉ chủ) ----
+// ---- Tài khoản nhà cung cấp (chỉ chủ): chỉ xem tình trạng – máy cửa hàng ghi tai_lieu bo='ncc_tt' {co, luc, loi} ----
 async function hienNcc() {
-  const o = $('ncc-ds'); let ds = {}, tt = {};
-  try { [ds, tt] = await Promise.all([NccTk.danhSach(sb), NccTk.trangThai(sb)]) } catch (e) { o.innerHTML = '<p class="loi">Không tải được: ' + esc(e.message || e) + '</p>'; return }
+  const o = $('ncc-ds'); let tt = {};
+  try { tt = await NccTk.trangThai(sb) } catch (e) { o.innerHTML = '<p class="loi">Không tải được: ' + esc(e.message || e) + '</p>'; return }
   o.innerHTML = NccTk.NCC.map(([id, ten]) => {
-    const c = ds[id], t = tt[id];
-    const dong = c ? (t && t.loi ? `<span class="tt loi">⚠ ${esc(t.loi)}</span>` : t && t.luc ? `<span class="tt ok">✓ lấy giá ${gioPraha(t.luc)}</span>` : `<span class="tt ok">✓ đã lưu ${gioPraha(c.luc)} – chờ lần lấy giá tới</span>`) : '<span class="tt">chưa nhập</span>';
-    return `<div class="ncc" data-id="${id}" data-ten="${esc(ten)}"><div class="dong"><div style="flex:1"><b>${esc(ten)}</b><br>${dong}</div><button type="button" class="nho" data-mo>${c ? 'Đổi' : 'Nhập'}</button></div></div>`;
+    const t = tt[id] || {};
+    const dong = !t.co ? '<span class="tt">chưa nhập trên máy cửa hàng</span>' : t.loi ? `<span class="tt loi">⚠ ${esc(t.loi)}</span>` : t.luc ? `<span class="tt ok">✓ lấy giá ${gioPraha(t.luc)}</span>` : '<span class="tt ok">✓ đã nhập – chờ lần lấy giá tới</span>';
+    return `<div class="ncc"><b>${esc(ten)}</b><br>${dong}</div>`;
   }).join('');
 }
-$('ncc-ds').addEventListener('click', async e => {
-  const box = e.target.closest('.ncc'); if (!box) return;
-  const id = box.dataset.id, ten = box.dataset.ten;
-  if (e.target.closest('[data-mo]')) {
-    if (box.querySelector('form')) { box.querySelector('form').remove(); return }
-    const f = document.createElement('form'); f.autocomplete = 'off';
-    f.innerHTML = `<input name="u" placeholder="Tên đăng nhập / email ${esc(ten)}" autocomplete="off" autocapitalize="off" spellcheck="false" required>
-      <input name="p" type="password" placeholder="Mật khẩu ${esc(ten)}" autocomplete="new-password" required>
-      <label style="margin:0;font-weight:400;font-size:15px"><input type="checkbox" data-hien style="width:auto;min-height:0"> Hiện mật khẩu</label>
-      <div class="hang"><button class="nut">Lưu</button><button type="button" class="nut phu" data-xoa>Xoá</button></div>`;
-    box.appendChild(f); f.u.focus();
-    f.querySelector('[data-hien]').onchange = ev => f.p.type = ev.target.checked ? 'text' : 'password';
-    f.onsubmit = async ev => {
-      ev.preventDefault();
-      if (!navigator.onLine) { alert('Cần có mạng'); return }
-      const b = f.querySelector('.nut'); b.disabled = true; b.textContent = 'Đang lưu…';
-      try { await NccTk.luu(sb, id, ten, f.u.value.trim(), f.p.value); f.reset(); hienNcc() }
-      catch (err) { b.disabled = false; b.textContent = 'Lưu'; alert('Không lưu được: ' + (err.message || err)) }
-    };
-    f.querySelector('[data-xoa]').onclick = async () => {
-      if (!confirm('Xoá tài khoản ' + ten + '? Máy sẽ không lấy giá ' + ten + ' nữa.')) return;
-      try { await NccTk.xoa(sb, id); hienNcc() } catch (err) { alert('Không xoá được: ' + (err.message || err)) }
-    };
-  }
-});
 
 $('nut-doimk').onclick = () => hien('doi-mk');
 $('f-mk').onsubmit = async ev => {
