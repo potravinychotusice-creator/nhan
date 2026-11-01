@@ -49,7 +49,9 @@ def upload(tok, name, raw, ctype):
 def day(folder, note=''):
     tok = login()
     old = {}
-    try: old = json.loads(req('GET', f'/storage/v1/object/authenticated/{BUCKET}/manifest.json', token=tok, headers={'Cache-Control': 'no-cache'}) or b'{}').get('files', {})
+    try:
+        m = req('GET', f'/storage/v1/object/authenticated/{BUCKET}/manifest.json', token=tok, headers={'Cache-Control': 'no-cache'})
+        old = (m if isinstance(m, dict) else json.loads(m or b'{}')).get('files', {})
     except SystemExit: pass
     files, sent = {}, 0
     for f in FILES:

@@ -202,8 +202,36 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'cam'; b.textContent = '📷'; b.title = 'Quét mã bằng camera'; b.setAttribute('aria-label', 'Quét mã bằng camera');
       b.onclick = camTrucTiep; go.after(b);
       const q = document.getElementById('q'); if (q && matchMedia('(pointer:coarse)').matches) q.removeAttribute('autofocus'); // điện thoại: không tự bật bàn phím
-      xepGon();
+      xepGon(); tuTim();
+      const st = document.getElementById('st');
+      if (st) { const an = () => { st.hidden = /^Sẵn sàng/.test(st.textContent.trim()) }; new MutationObserver(an).observe(st, { childList: true, characterData: true, subtree: true }); an() }
     });
+    // Quét là tự tìm: ô có đủ 1 mã vạch hợp lệ (EAN-8/12/13, đúng số kiểm tra) → tìm ngay, không cần bấm Tìm.
+    // Máy quét gõ nối vào mã cũ (ô không xoá) → chỉ giữ mã mới nhất ở cuối.
+    function eanOk(c) {
+      if (!/^\d+$/.test(c) || ![8, 12, 13].includes(c.length)) return false;
+      const d = c.split('').map(Number), k = d.pop(); let t = 0;
+      d.reverse().forEach((x, i) => t += x * (i % 2 ? 1 : 3));
+      return (10 - t % 10) % 10 === k;
+    }
+    function tuTim() {
+      const q = document.getElementById('q'), go = document.getElementById('go'); if (!q || !go) return;
+      let hen = 0, cuoi = '';
+      q.addEventListener('input', () => {
+        clearTimeout(hen);
+        const v = q.value.replace(/\s+/g, '');
+        if (!/^\d{8,}$/.test(v)) return;
+        let ma = null;
+        for (const n of [13, 12, 8]) { const c = v.slice(-n); if (v.length >= n && eanOk(c)) { ma = c; break } }
+        if (!ma) return;
+        hen = setTimeout(() => {
+          if (q.value !== ma) q.value = ma;
+          if (ma === cuoi && Date.now() - tuTim.luc < 1500) return; // máy quét gửi thêm Enter → không tìm 2 lần
+          cuoi = ma; tuTim.luc = Date.now(); go.click(); q.select();
+        }, ma.length === 13 ? 180 : 700); // mã 8/12 số có thể là đoạn đầu khi gõ tay → chờ lâu hơn
+      });
+      q.addEventListener('keydown', e => { if (e.key === 'Enter' && q.value === cuoi && Date.now() - (tuTim.luc || 0) < 1500) { e.preventDefault(); e.stopImmediatePropagation() } }, true);
+    }
     // Kết quả tìm ra khỏi khung dính; nút lọc + Báo sai + List siêu thị vào ngăn kéo ☰
     function xepGon() {
       const $ = id => document.getElementById(id), scan = document.querySelector('.scan');
