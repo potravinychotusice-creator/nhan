@@ -4,7 +4,7 @@
 Tài khoản máy quét: ~/.config/cuahang/may.env (SB_EMAIL=..., SB_PASS=...), chmod 600. Không in mật khẩu.
 
   checkgia_cloud.py kiem                       # thử đăng nhập
-  checkgia_cloud.py day <thu_muc> [ghi_chu]    # đẩy index.html, data/*.json (trong thư mục build Check giá)
+  checkgia_cloud.py day <thu_muc> [ghi_chu] [--bo letak]  # đẩy index.html, data/*.json (Check giá; --bo letak = So giá leták vào letak/)
   checkgia_cloud.py doc <bo> [chi_chua_xong]   # in JSON {id: data} của 1 bộ (report, views, ean, letak_list, status)
   checkgia_cloud.py ghi <bo> <id> <json|@file> # ghi 1 tài liệu (vd status f5 '{"state":"done",...}')
 """
@@ -15,6 +15,7 @@ SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co'
 SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf'
 BUCKET = 'checkgia'
 ENV = os.path.expanduser('~/.config/cuahang/may.env')
+BO = {'letak': ['index.html', 'data/ean.json', 'data/img.json', 'data/ncc_list.json']}   # bộ khác: thư mục con trong bucket
 FILES = ['index.html', 'data/cat.json', 'data/deals.json', 'data/dod_img.json',
          'data/letak.json', 'data/report_replies.json', 'data/akce_unikom.json']
 
@@ -46,15 +47,15 @@ def upload(tok, name, raw, ctype):
         {'Content-Type': ctype, 'x-upsert': 'true', 'Cache-Control': 'no-cache'}, tok)
 
 
-def day(folder, note=''):
-    tok = login()
+def day(folder, note='', bo=''):
+    tok = login(); pre = bo + '/' if bo else ''; ds = BO.get(bo, FILES)
     old = {}
     try:
-        m = req('GET', f'/storage/v1/object/authenticated/{BUCKET}/manifest.json', token=tok, headers={'Cache-Control': 'no-cache'})
+        m = req('GET', f'/storage/v1/object/authenticated/{BUCKET}/{pre}manifest.json', token=tok, headers={'Cache-Control': 'no-cache'})
         old = (m if isinstance(m, dict) else json.loads(m or b'{}')).get('files', {})
     except SystemExit: pass
     files, sent = {}, 0
-    for f in FILES:
+    for f in ds:
         p = os.path.join(folder, f)
         if not os.path.exists(p):
             if f in old: files[f] = old[f]  # giữ bản cũ trên cloud
@@ -62,10 +63,10 @@ def day(folder, note=''):
         raw = open(p, 'rb').read(); sha = hashlib.sha256(raw).hexdigest()[:16]
         files[f] = {'sha': sha, 'size': len(raw)}
         if old.get(f, {}).get('sha') == sha: continue
-        upload(tok, f + '.gz', gzip.compress(raw, 9), 'application/gzip'); sent += 1
+        upload(tok, pre + f + '.gz', gzip.compress(raw, 9), 'application/gzip'); sent += 1
         print(f'  ↑ {f} {len(raw)//1024} KB')
     man = {'files': files, 'luc': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'note': note}
-    upload(tok, 'manifest.json', json.dumps(man, ensure_ascii=False).encode(), 'application/json')
+    upload(tok, pre + 'manifest.json', json.dumps(man, ensure_ascii=False).encode(), 'application/json')
     print(f'ok: {sent} file mới, {len(files)} file trên cloud, lúc {man["luc"]}')
 
 
@@ -89,7 +90,9 @@ if __name__ == '__main__':
     a = sys.argv[1:]
     if not a: print(__doc__); sys.exit()
     if a[0] == 'kiem': login(); print('ok: đăng nhập được')
-    elif a[0] == 'day': day(a[1], ' '.join(a[2:]))
+    elif a[0] == 'day':
+        bo = a[a.index('--bo') + 1] if '--bo' in a else ''
+        day(a[1], ' '.join(x for x in a[2:] if x not in ('--bo', bo)), bo)
     elif a[0] == 'doc': doc(a[1], len(a) > 2)
     elif a[0] == 'ghi': ghi(a[1], a[2], a[3])
     else: print(__doc__)

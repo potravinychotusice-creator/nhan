@@ -38,7 +38,7 @@ main{flex:1;min-height:0;position:relative}
 .trang{position:absolute;inset:0;overflow:auto;padding:16px}
 .trang[hidden]{display:none}
 #t-nhan,#t-gia{padding:0;overflow:hidden}
-#t-nhan iframe,#t-gia iframe,#t-akce iframe{border:0;width:100%;height:100%;display:block}
+#t-nhan iframe,#t-gia iframe,#t-akce iframe,#t-letak iframe{border:0;width:100%;height:100%;display:block}
 .the{background:var(--the);border:1px solid var(--vien);border-radius:14px;padding:16px;margin-bottom:14px}
 .the h2{margin:0 0 8px;font-size:20px}
 .capnhat{font-size:14px;color:var(--mo)}
@@ -94,11 +94,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
     <section class="trang" id="t-nhan"></section>
     <section class="trang" id="t-gia" hidden></section>
     <section class="trang" id="t-akce" hidden></section>
-    <section class="trang" id="t-letak" hidden>
-      <div class="the"><h2>So giá leták</h2>
-        <p>Akce tuần của Lidl, Kaufland, Penny, Albert, Billa, Tesco, Globus. Đang làm ở bước B4.</p>
-        <div class="capnhat" data-khoa="letak">Cập nhật lúc: chưa có dữ liệu</div></div>
-    </section>
+    <section class="trang" id="t-letak" hidden></section>
     <section class="trang" id="t-toi" hidden>
       <div class="the"><h2>Tài khoản</h2>
         <p id="toi-email"></p>
@@ -142,7 +138,7 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 <script>
 const SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co';
 const SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf';
-const PHIEN_BAN = '2026-11-01b3h';
+const PHIEN_BAN = '2026-11-01b4';
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 window.SB = sb; // trang con (nhan.html) dùng chung phiên đăng nhập
 
@@ -165,7 +161,7 @@ function moTab(t) {
   if (t === 'gia') moGia();
   if (t === 'akce' && !$('t-akce').firstChild) { const f = document.createElement('iframe'); f.src = 'akce.html'; f.title = 'Akce Unikom'; $('t-akce').appendChild(f) }
   try { localStorage.setItem('tab', t) } catch (e) {}
-  if (t === 'letak') napCapNhat();
+  if (t === 'letak' && !$('t-letak').firstChild) { const f = document.createElement('iframe'); f.src = 'letak.html'; f.title = 'So giá leták'; $('t-letak').appendChild(f) }
   if (t === 'toi') hienGokasa();
 }
 // Check giá: trang thật nằm trong kho kín Supabase, gia.html tải về. Mở lại tab sau 15 phút → xem có giá mới không.
