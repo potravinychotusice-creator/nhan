@@ -50,6 +50,8 @@ drop policy if exists "ghi du lieu" on public.du_lieu;
 create policy "ghi du lieu" on public.du_lieu for insert to authenticated with check (true);
 drop policy if exists "sua du lieu" on public.du_lieu;
 create policy "sua du lieu" on public.du_lieu for update to authenticated using (true) with check (true);
+drop policy if exists "xoa du lieu" on public.du_lieu;
+create policy "xoa du lieu" on public.du_lieu for delete to authenticated using (true);
 
 -- Hồ sơ cho người dùng đã tạo trước khi chạy file này
 insert into public.nhan_vien(id, ten)
