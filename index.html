@@ -43,6 +43,16 @@ main{flex:1;min-height:0;position:relative}
 .the h2{margin:0 0 8px;font-size:20px}
 .capnhat{font-size:14px;color:var(--mo)}
 /* Menu tab: ẩn, bấm ☰ mới hiện (dành chỗ màn hình cho nội dung) */
+/* Tài khoản NCC */
+.ncc{border-top:1px solid var(--vien);padding:10px 0}
+.ncc .dong{display:flex;align-items:center;gap:10px}
+.ncc .dong b{flex:1}
+.ncc .tt{font-size:13px;color:var(--mo)}
+.ncc .tt.ok{color:var(--xanh)} .ncc .tt.loi{color:var(--do);font-weight:600}
+.ncc .nho{min-height:42px;padding:0 14px;border-radius:10px;border:2px solid var(--xanh);background:#fff;color:var(--xanh);font-weight:700;cursor:pointer}
+.ncc form{margin-top:8px;display:grid;gap:8px}
+.ncc form .hang{display:flex;gap:8px}
+.ncc form .hang .nut{flex:1}
 nav{position:absolute;top:52px;left:8px;z-index:60;display:flex;flex-direction:column;background:#fff;border:1px solid var(--vien);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);overflow:hidden;min-width:220px}
 nav[hidden]{display:none}
 #man-che{position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.25)}
@@ -103,6 +113,10 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
         <button class="nut" id="gk-nut">📤 Tải CSV GOKASA mới</button>
         <div id="gk-kq" style="margin-top:10px"></div>
       </div>
+      <div class="the" id="ncc-the" hidden><h2>Tài khoản nhà cung cấp</h2>
+        <p class="capnhat">Nhập 1 lần để máy cửa hàng tự đăng nhập và lấy giá mỗi sáng. Mật khẩu được khoá ngay trên máy này, chỉ máy tính cửa hàng mở được – Supabase, nhân viên, Claude đều không đọc được.</p>
+        <div id="ncc-ds"></div>
+      </div>
       <div class="the">
         <button class="nut phu" id="nut-doimk">Đổi mật khẩu</button>
         <div style="height:10px"></div>
@@ -122,10 +136,11 @@ nav button[aria-current=true]{color:var(--xanh);background:var(--xanh2)}
 
 <script src="lib/supabase.min.js"></script>
 <script src="lib/gokasa.js"></script>
+<script src="lib/ncc_tk.js"></script>
 <script>
 const SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co';
 const SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf';
-const PHIEN_BAN = '2026-11-01b3e';
+const PHIEN_BAN = '2026-11-01b3f';
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 window.SB = sb; // trang con (nhan.html) dùng chung phiên đăng nhập
 
@@ -194,7 +209,7 @@ async function napHoSo(user) {
   $('phien-ban').textContent = 'Phiên bản ' + PHIEN_BAN;
   try {
     const { data } = await sb.from('nhan_vien').select('ten,quyen').eq('id', user.id).maybeSingle();
-    if (data) { $('toi-ten').value = data.ten || ''; if (data.quyen === 'chu') $('toi-email').textContent += ' · chủ cửa hàng'; }
+    if (data) { $('toi-ten').value = data.ten || ''; if (data.quyen === 'chu') { $('toi-email').textContent += ' · chủ cửa hàng'; $('ncc-the').hidden = false; hienNcc(); } }
   } catch (e) {}
 }
 
@@ -250,6 +265,42 @@ $('gk-file').onchange = async () => {
     } catch (e) { $('gk-ok').disabled = false; $('gk-ok').textContent = '✔ Thử lưu lại'; alert('Không lưu được: ' + (e.message || e)) }
   };
 };
+
+// ---- Tài khoản nhà cung cấp (chỉ chủ) ----
+async function hienNcc() {
+  const o = $('ncc-ds'); let ds = {}, tt = {};
+  try { [ds, tt] = await Promise.all([NccTk.danhSach(sb), NccTk.trangThai(sb)]) } catch (e) { o.innerHTML = '<p class="loi">Không tải được: ' + esc(e.message || e) + '</p>'; return }
+  o.innerHTML = NccTk.NCC.map(([id, ten]) => {
+    const c = ds[id], t = tt[id];
+    const dong = c ? (t && t.loi ? `<span class="tt loi">⚠ ${esc(t.loi)}</span>` : t && t.luc ? `<span class="tt ok">✓ lấy giá ${gioPraha(t.luc)}</span>` : `<span class="tt ok">✓ đã lưu ${gioPraha(c.luc)} – chờ lần lấy giá tới</span>`) : '<span class="tt">chưa nhập</span>';
+    return `<div class="ncc" data-id="${id}" data-ten="${esc(ten)}"><div class="dong"><div style="flex:1"><b>${esc(ten)}</b><br>${dong}</div><button type="button" class="nho" data-mo>${c ? 'Đổi' : 'Nhập'}</button></div></div>`;
+  }).join('');
+}
+$('ncc-ds').addEventListener('click', async e => {
+  const box = e.target.closest('.ncc'); if (!box) return;
+  const id = box.dataset.id, ten = box.dataset.ten;
+  if (e.target.closest('[data-mo]')) {
+    if (box.querySelector('form')) { box.querySelector('form').remove(); return }
+    const f = document.createElement('form'); f.autocomplete = 'off';
+    f.innerHTML = `<input name="u" placeholder="Tên đăng nhập / email ${esc(ten)}" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+      <input name="p" type="password" placeholder="Mật khẩu ${esc(ten)}" autocomplete="new-password" required>
+      <label style="margin:0;font-weight:400;font-size:15px"><input type="checkbox" data-hien style="width:auto;min-height:0"> Hiện mật khẩu</label>
+      <div class="hang"><button class="nut">Lưu</button><button type="button" class="nut phu" data-xoa>Xoá</button></div>`;
+    box.appendChild(f); f.u.focus();
+    f.querySelector('[data-hien]').onchange = ev => f.p.type = ev.target.checked ? 'text' : 'password';
+    f.onsubmit = async ev => {
+      ev.preventDefault();
+      if (!navigator.onLine) { alert('Cần có mạng'); return }
+      const b = f.querySelector('.nut'); b.disabled = true; b.textContent = 'Đang lưu…';
+      try { await NccTk.luu(sb, id, ten, f.u.value.trim(), f.p.value); f.reset(); hienNcc() }
+      catch (err) { b.disabled = false; b.textContent = 'Lưu'; alert('Không lưu được: ' + (err.message || err)) }
+    };
+    f.querySelector('[data-xoa]').onclick = async () => {
+      if (!confirm('Xoá tài khoản ' + ten + '? Máy sẽ không lấy giá ' + ten + ' nữa.')) return;
+      try { await NccTk.xoa(sb, id); hienNcc() } catch (err) { alert('Không xoá được: ' + (err.message || err)) }
+    };
+  }
+});
 
 $('nut-doimk').onclick = () => hien('doi-mk');
 $('f-mk').onsubmit = async ev => {

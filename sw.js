@@ -1,6 +1,6 @@
 // Chạy offline: lấy bản mới khi có mạng, mất mạng thì dùng bản đã lưu.
-const KHO = 'cuahang-v9';
-const SAN = ['./', 'index.html', 'nhan.html', 'gia.html', 'lib/supabase.min.js', 'lib/gokasa.js', 'manifest.json', 'icons/icon-192.png', 'icons/favicon.png'];
+const KHO = 'cuahang-v10';
+const SAN = ['./', 'index.html', 'nhan.html', 'gia.html', 'lib/supabase.min.js', 'lib/gokasa.js', 'lib/ncc_tk.js', 'manifest.json', 'icons/icon-192.png', 'icons/favicon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(KHO).then(c => c.addAll(SAN)).then(() => self.skipWaiting()));
