@@ -76,8 +76,63 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<script>(' + lop.toString() + ')()<\/script>' + css;
   const a = html.indexOf('<title>'), b = html.indexOf('</title>');
-  html = a >= 0 ? head + html.slice(a, b + 8) + '</head><body>' + html.slice(b + 8) + '</body></html>' : head + '</head><body>' + html + '</body></html>';
+  const sauCung = '<script>(' + gon.toString() + ')()<\/script>';   // chạy SAU code trang: gọn giao diện, xuất ảnh từng siêu thị
+  html = a >= 0 ? head + html.slice(a, b + 8) + '</head><body>' + html.slice(b + 8) + sauCung + '</body></html>' : head + '</head><body>' + html + sauCung + '</body></html>';
   document.open(); document.write(html); document.close();
+
+
+  // ---- 4.11 anh: dòng trạng thái nhỏ, bộ lọc gọn vào 1 nút ở góc, xuất PNG mỗi siêu thị 1 ảnh ----
+  function gon() {
+    const $ = s => document.querySelector(s);
+    const st = document.createElement('style');
+    st.textContent = '#f5st{display:block;font-size:12px;line-height:1.35;max-height:2.7em;overflow:hidden;cursor:pointer;color:var(--muted)}#f5st.mo{max-height:none}'
+      + '.f5{gap:6px}.f5 #tagd{font-size:14px}.f5 button{padding:4px 10px;font-size:12px}'
+      + '.bar .loc-ds{display:none;position:absolute;right:0;left:0;top:100%;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.15);flex-direction:column;gap:6px}'
+      + '.bar.loc-mo .loc-ds{display:flex}.bar{position:sticky}.loc-hang{display:flex;gap:6px;align-items:center}.loc-hang input{flex:1}'
+      + '.loc-nut{flex:none;font:600 13px system-ui,sans-serif;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer;max-width:58vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      + '.bar .loc-ds .seg{flex-wrap:wrap!important;overflow:visible!important}';
+    document.head.appendChild(st);
+    // dòng trạng thái: chạm để xem đủ
+    const f5st = $('#f5st'); if (f5st) f5st.addEventListener('click', () => f5st.classList.toggle('mo'));
+    // bộ lọc: các hàng chip vào 1 khung thả xuống, mở bằng nút ở góc cạnh ô tìm
+    const bar = $('.bar'), q = $('#q');
+    if (bar && q) {
+      const lines = [...bar.querySelectorAll(':scope > .line')].filter(l => !l.contains(q));
+      const ds = document.createElement('div'); ds.className = 'loc-ds'; lines.forEach(l => ds.appendChild(l));
+      const hang = q.closest('.line'); hang.classList.add('loc-hang');
+      const nut = document.createElement('button'); nut.type = 'button'; nut.className = 'loc-nut'; hang.appendChild(nut); bar.appendChild(ds);
+      const tom = () => { const on = [...ds.querySelectorAll('button[aria-pressed="true"]')].map(b => b.childNodes[0] && b.childNodes[0].textContent.trim()).filter(t => t && !/^(Tất cả|Mọi )/.test(t)); nut.textContent = '⚙ ' + (on.length ? on.join(' · ') : 'Lọc') + ' ▾' };
+      nut.onclick = e => { e.stopPropagation(); bar.classList.toggle('loc-mo') };
+      ds.addEventListener('click', () => setTimeout(tom, 0));
+      document.addEventListener('click', e => { if (!bar.contains(e.target)) bar.classList.remove('loc-mo') });
+      new MutationObserver(tom).observe(ds, { subtree: true, attributes: true, attributeFilter: ['aria-pressed'] });
+      tom();
+    }
+    // PNG: mỗi siêu thị 1 ảnh riêng (1 ảnh chung quá dài, xem không nét)
+    const nutPng = $('#dlPng');
+    if (nutPng && typeof pages === 'function' && typeof groups === 'function') {
+      nutPng.textContent = 'PNG từng siêu thị';
+      nutPng.onclick = async () => {
+        const msg = t => { const m = $('#cartMsg'); if (m) m.textContent = t };
+        const G = groups(); if (!G.length) return;
+        const g0 = window.groups, p0 = window.picked;
+        let n = 0;
+        try {
+          for (const [c, L] of G) {
+            msg('Đang tạo ảnh ' + c + '…');
+            window.groups = () => [[c, L]]; window.picked = () => L;
+            const [cv] = await pages(0);
+            const b = await new Promise(r => cv.toBlob(r, 'image/png'));
+            const ten = 'di-lay-hang-' + today + '-' + c.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+            await save(ten, b, ''); n++;
+            await new Promise(r => setTimeout(r, 700));   // tránh trình duyệt chặn tải nhiều file một lúc
+          }
+          msg('Đã tải ' + n + ' ảnh (mỗi siêu thị 1 ảnh).');
+        } catch (e) { msg('Chưa tạo được ảnh: ' + (e && e.message || e)) }
+        finally { window.groups = g0; window.picked = p0 }
+      };
+    }
+  }
 
   // ---- chạy bên trong trang So giá leták ----
   function lop() {
