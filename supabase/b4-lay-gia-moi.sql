@@ -85,6 +85,12 @@ declare r public.refresh_requests; t public.lam_moi_tt; m timestamptz;
 begin
   select max(luc) into m from public.may_nhip;
   select * into r from public.refresh_requests order by tao_luc desc limit 1;
+  -- hàm chỉ đọc (không dọn được) → trả trạng thái HIỆU LỰC: chờ quá hạn = het_han, chạy quá 45 phút = loi
+  if r.status = 'cho' and r.het_han < now() then
+    r.status := 'het_han'; r.thong_bao := 'Máy cửa hàng không nhận yêu cầu trong 15 phút (máy tắt hoặc chương trình nhận lệnh không chạy).';
+  elsif r.status = 'dang_chay' and coalesce(r.cap_nhat_luc, r.nhan_luc) < now() - interval '45 minutes' then
+    r.status := 'loi'; r.thong_bao := 'Máy chạy quá 45 phút không báo xong – coi như lỗi. Dữ liệu cũ vẫn giữ nguyên.';
+  end if;
   t := (r.id, r.status, r.tao_luc, r.het_han, r.nhan_luc, r.xong_luc, r.cap_nhat_luc, r.thong_bao, m,
         case when r.id is null then null else r.tao_luc + interval '10 minutes' end, false);
   return t;
