@@ -35,9 +35,12 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   let man = null, manMay = null;
   try { manMay = JSON.parse(await docMay('manifest.json') || 'null') } catch (e) {}
   try {
-    const { data, error } = await sb.storage.from('checkgia').download(PRE + 'manifest.json');
-    if (error) throw error;
-    man = JSON.parse(await data.text());
+    // 4.11: manifest luôn lấy mới, không dùng bộ nhớ đệm trình duyệt/CDN (lỗi: bấm F5 xong vẫn mở bản cũ)
+    const su = await sb.storage.from('checkgia').createSignedUrl(PRE + 'manifest.json', 60);
+    if (su.error) throw su.error;
+    const rm = await fetch(su.data.signedUrl + (su.data.signedUrl.includes('?') ? '&' : '?') + '_t=' + Date.now(), { cache: 'no-store' });
+    if (!rm.ok) throw new Error('manifest ' + rm.status);
+    man = JSON.parse(await rm.text());
   } catch (e) {
     if (!manMay) { loi(navigator.onLine ? 'Chưa có giá trên cloud (' + (e.message || e) + ')' : 'Mất mạng và máy này chưa tải So giá leták lần nào', true); return }
     man = manMay;
@@ -132,7 +135,9 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     // → máy cửa hàng (tools/f5/f5_worker.py) nhận, quét Kupi, so với giá nhập đang có, đẩy phiên bản mới → báo xong → trang mở bản mới.
     (function () {
       const SONG = 90e3; // máy coi là đang chạy nếu có nhịp tim trong 90 giây
-      let tt = null, cua = null, hen = null, moLai = false, loiCai = '';
+      let tt = null, cua = null, hen = null, moLai = false, loiCai = '', cuMoi = false;
+      const moiLai = () => { try { const f = window.frameElement; if (f) { f.src = 'letak.html?v=' + Date.now(); return } } catch (e) {} location.reload() };
+      document.addEventListener('click', ev => { if (cuMoi && ev.target && ev.target.id === 'f5st') moiLai() });
       const gio = t => t ? new Date(t).toLocaleTimeString('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit' }) : '';
       const ngay = t => new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague' });
       const hom = t => t && ngay(t) === ngay(Date.now()) ? gio(t) : (t ? ngay(t) + ' ' + gio(t) : '');
@@ -163,7 +168,10 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
           else if (s === 'het_han') m = '⌛ Yêu cầu lúc ' + hom(tt.tao_luc) + ' đã huỷ: ' + (tt.thong_bao || 'máy không nhận.');
           if (tt && tt.bam_lai_luc && new Date(tt.bam_lai_luc) > Date.now()) m += (m ? ' ' : '') + '(Bấm lại được sau ' + gio(tt.bam_lai_luc) + '.)';
           if (!song && tt && tt.may_luc) m += (m ? ' ' : '') + 'Máy cửa hàng đang không chạy (thấy lần cuối ' + hom(tt.may_luc) + ').';
-          if (s === 'xong' && cua === tt.id && !moLai) { moLai = true; m += ' – đang mở bản mới…'; setTimeout(() => location.reload(), 2500) }
+          if (s === 'xong' && cua === tt.id && !moLai) { moLai = true; m += ' – đang mở bản mới…'; setTimeout(moiLai, 2000) }
+          // bản đang xem cũ hơn lượt đã xong → báo rõ, cho bấm mở lại
+          const ml = P.__LT && P.__LT.man && P.__LT.man.luc;
+          if (s === 'xong' && !moLai && ml && tt.xong_luc && new Date(ml) < new Date(tt.xong_luc) - 120e3) { m += '\n⚠ Trang đang hiện bản cũ hơn – chạm vào dòng này để mở bản mới.'; cuMoi = true }
         }
         e.textContent = (pham() ? pham() + '\n' : '') + m; e.style.whiteSpace = 'pre-line';
         if (b) b.disabled = s === 'cho' || s === 'dang_chay';
