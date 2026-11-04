@@ -143,10 +143,10 @@ $('#hdr').textContent=`Akce của 7 siêu thị (cả leták tuần sau nếu đ
 const S={chain:'all',g:'all',mode:'all',day:'all',sort:'han',q:''};
 /* 4.11 anh: tuỳ chọn sắp xếp riêng trong menu */
 const SORTS=[['han','Theo hạn'],['re','Giá rẻ → đắt'],['dat','Giá đắt → rẻ'],['dep','Giá đẹp nhất'],['letak','Theo leták']];
-const lkPage=r=>{const m=String(r.lk||'').match(/page=(\d+)/);return m?+m[1]:999};
+const lkPage=r=>{if(!r.lk)return 999;const m=String(r.lk).match(/page=(\d+)/);return m?+m[1]:1};   // link không ghi trang = trang 1 (bìa)
 try{Object.assign(S,JSON.parse(localStorage.getItem('lt2')||'{}'));S.q=''}catch(e){}
 /* 26.10 anh: chỉ 3 lựa chọn – giá đẹp, rẻ hơn giá nhập, rẻ nhất giữa siêu thị (bỏ ngắn ngày, sắp có, giới hạn ks, nghi ghép sai, tất cả) */
-const MODES=[['all','Tất cả hàng',r=>true],['good','Giá đẹp',r=>r.good],['buy','Rẻ hơn giá nhập',r=>r.st==='buy'],['cheap','Rẻ nhất giữa siêu thị',r=>r.cheap],['inv','Hàng anh đang nhập',r=>!!r.inv],['invc','Siêu thị rẻ hơn hàng đang nhập → lấy',r=>r.inv&&r.p<=r.inv[2]*0.97],['own','Đề xuất akce tuần sau (nhập rẻ hơn siêu thị)',r=>r.st==='sup'&&r.best&&!r.best.x]];if(!MODES.some(m=>m[0]===S.mode))S.mode='all';
+const MODES=[['all','Tất cả hàng',r=>true],['bia','Trang bìa leták',r=>lkPage(r)<=1],['bia3','Trang 1–3 leták',r=>lkPage(r)<=3],['good','Giá đẹp',r=>r.good],['buy','Rẻ hơn giá nhập',r=>r.st==='buy'],['cheap','Rẻ nhất giữa siêu thị',r=>r.cheap],['inv','Hàng anh đang nhập',r=>!!r.inv],['invc','Siêu thị rẻ hơn hàng đang nhập → lấy',r=>r.inv&&r.p<=r.inv[2]*0.97],['own','Đề xuất akce tuần sau (nhập rẻ hơn siêu thị)',r=>r.st==='sup'&&r.best&&!r.best.x]];if(!MODES.some(m=>m[0]===S.mode))S.mode='all';
 /* 26.10 18h anh: thêm cột “Hôm nay” = akce đang chạy hôm nay (bỏ món sắp có / chưa tới ngày) */
 const onToday=r=>!r.fut&&(!r.d0||r.d0<=today)&&(!r.d1||r.d1>=today);
 /* 29.10 anh: tách leták MỚI và leták CŨ (còn hạn nhưng ra trước, hay hết hàng). Mỗi chuỗi: leták mới = ngày bắt đầu muộn nhất trong các akce đang chạy hôm nay */
