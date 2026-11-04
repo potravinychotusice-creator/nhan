@@ -90,7 +90,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       + '.bar .loc-ds{display:none;position:absolute;right:0;left:0;top:100%;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.15);flex-direction:column;gap:6px}'
       + '.bar.loc-mo .loc-ds{display:flex}.bar{position:sticky}.loc-hang{display:flex;gap:6px;align-items:center}.loc-hang input{flex:1}'
       + '.loc-nut{flex:none;font:600 13px system-ui,sans-serif;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:6px 12px;cursor:pointer;max-width:58vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
-      + '.bar .loc-ds .seg{flex-wrap:wrap!important;overflow:visible!important}';
+      + '.bar .loc-ds .seg{flex-wrap:wrap!important;overflow:visible!important}.loc-tt{border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:2px}';
     document.head.appendChild(st);
     // thẻ hàng gọn (4.11 anh: "tóm gọn thông tin, đừng sổ xuống mất diện tích"):
     // tên → [giá siêu thị | nơi nhập rẻ nhất] → 1 dòng hạn nhỏ; chi tiết nơi nhập chỉ hiện khi chạm vào ô đó
@@ -148,13 +148,14 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     };
     const ds0 = $('#list');
     if (ds0) { const lam = () => ds0.querySelectorAll('.row').forEach(gonThe); new MutationObserver(lam).observe(ds0, { childList: true }); lam() }
-    // dòng trạng thái: chạm để xem đủ
-    const f5st = $('#f5st'); if (f5st) f5st.addEventListener('click', () => f5st.classList.toggle('mo'));
+    // dòng trạng thái: không hiện ở đầu trang – chuyển vào khung ⚙ (xem bên dưới)
+    const f5st = $('#f5st');
     // bộ lọc: các hàng chip vào 1 khung thả xuống, mở bằng nút ở góc cạnh ô tìm
     const bar = $('.bar'), q = $('#q');
     if (bar && q) {
       const lines = [...bar.querySelectorAll(':scope > .line')].filter(l => !l.contains(q));
       const ds = document.createElement('div'); ds.className = 'loc-ds'; lines.forEach(l => ds.appendChild(l));
+      if (f5st) { const tt = document.createElement('div'); tt.className = 'loc-tt'; tt.appendChild(f5st); ds.prepend(tt); f5st.classList.add('mo') }
       const hang = q.closest('.line'); hang.classList.add('loc-hang');
       const nut = document.createElement('button'); nut.type = 'button'; nut.className = 'loc-nut'; hang.appendChild(nut); bar.appendChild(ds);
       const tom = () => { const on = [...ds.querySelectorAll('button[aria-pressed="true"]')].map(b => b.childNodes[0] && b.childNodes[0].textContent.trim()).filter(t => t && !/^(Tất cả|Mọi |Theo hạn)/.test(t)); nut.textContent = '⚙ ' + (on.length ? on.join(' · ') : 'Lọc') + ' ▾' };
@@ -285,7 +286,13 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
           if (s === 'xong' && !moLai && ml && tt.xong_luc && new Date(ml) < new Date(tt.xong_luc) - 120e3) { m += '\n⚠ Trang đang hiện bản cũ hơn – chạm vào dòng này để mở bản mới.'; cuMoi = true }
         }
         e.textContent = (pham() ? pham() + '\n' : '') + m; e.style.whiteSpace = 'pre-line';
-        if (b) b.disabled = s === 'cho' || s === 'dang_chay';
+        if (b) {
+          b.disabled = s === 'cho' || s === 'dang_chay';
+          // 4.11 anh: thông tin chi tiết vào ⚙; trên nút chỉ báo ngắn trạng thái
+          const vua = tt && tt.cap_nhat_luc && Date.now() - new Date(tt.cap_nhat_luc) < 30 * 60e3;
+          b.textContent = s === 'cho' ? (song ? '⏳ Đã gửi…' : '⏸ Chờ máy…') : s === 'dang_chay' ? '🔄 Đang lấy…'
+            : (s === 'loi' && vua) ? '⚠ Lỗi – xem ⚙' : (s === 'het_han' && vua) ? '⌛ Máy không nhận – xem ⚙' : '🔄 Lấy leták mới';
+        }
         lich();
       }
       function lich() {
