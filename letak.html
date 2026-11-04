@@ -99,7 +99,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     }
     const bao = bo => nghe.filter(n => n.bo === bo).forEach(chay);
     setInterval(() => { if (!document.hidden) nghe.forEach(chay) }, 60000);
-    const doc = (bo, id) => ({
+    const doc0 = (bo, id) => ({
       id,
       async get() { const { data, error } = await sb.from('tai_lieu').select('id,data').eq('bo', bo).eq('id', id).maybeSingle(); if (error) throw error; return snapDoc(id, data) },
       async set(v, o) {
@@ -111,6 +111,10 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       async delete() { const { error } = await sb.from('tai_lieu').delete().eq('bo', bo).eq('id', id); if (error) throw error; bao(bo) },
       onSnapshot(cb, err) { const n = { bo, id, cb, err }; nghe.push(n); chay(n); return () => nghe.splice(nghe.indexOf(n), 1) }
     });
+    // status/f5 của trang không dùng nữa: trạng thái F5 lấy từ hàng đợi refresh_requests (bên dưới)
+    const doc = (bo, id) => bo === 'lt_status' && id === 'f5'
+      ? { id, async get() { return snapDoc(id, null) }, async set() {}, async update() {}, async delete() {}, onSnapshot() { return () => {} } }
+      : doc0(bo, id);
     const DB = {
       collection: bo => (bo = BOX(bo), {
         doc: id => doc(bo, String(id)),
@@ -119,8 +123,71 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       }),
       doc: p => { const i = p.indexOf('/'); return doc(BOX(p.slice(0, i)), p.slice(i + 1)) }
     };
-    // F5 leták: chưa nối máy cửa hàng (quét leták do Claude làm) → không có mcp; tải file: trình duyệt tự tải (downloads = null)
+    // tải file: trình duyệt tự tải (downloads = null). F5 không qua Claude nữa (xem dưới).
     window.claude = { use: async n => n === 'db' ? DB : null };
+
+    // ===== F5 = "Lấy giá mới" qua hàng đợi Supabase (4.11.2026) =====
+    // Bấm → hàm yeu_cau_lam_moi('letak') (tự chống bấm trùng, hạn 15 phút) → máy cửa hàng (tools/f5/f5_worker.py) nhận,
+    // quét Kupi, so giá, đẩy lên kho → báo xong → trang tự mở bản mới. Máy tắt → báo rõ "đang chờ máy".
+    (function () {
+      const JOB = 'letak', SONG = 90e3; // máy coi là đang chạy nếu có nhịp tim trong 90 giây
+      let req = null, nhip = null, cua = null, hen = null, moLai = false, loiCai = '';
+      const gio = t => t ? new Date(t).toLocaleTimeString('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit' }) : '';
+      const ngay = t => new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague' });
+      const hom = t => t && ngay(t) === ngay(Date.now()) ? gio(t) : (t ? ngay(t) + ' ' + gio(t) : '');
+      async function doc() {
+        try {
+          const a = await sb.from('refresh_requests').select('*').eq('job', JOB).order('tao_luc', { ascending: false }).limit(1);
+          if (a.error) throw a.error;
+          const b = await sb.from('may_nhip').select('may,luc').order('luc', { ascending: false }).limit(1);
+          req = a.data[0] || null; nhip = (b.data && b.data[0]) || null; loiCai = '';
+        } catch (e) { loiCai = /does not exist|schema cache|42P01|PGRST/.test((e && (e.message || e.code)) || '') ? 'chua_cai' : ((e && e.message) || 'mất mạng') }
+        ve();
+      }
+      function ve() {
+        const e = document.getElementById('f5st'), b = document.getElementById('f5');
+        if (!e) { lich(); return }
+        const song = nhip && Date.now() - new Date(nhip.luc) < SONG;
+        let m = '';
+        if (loiCai === 'chua_cai') m = 'Nút F5 chưa dùng được: chưa cài hàng đợi trên Supabase (b4-lay-gia-moi.sql).';
+        else if (loiCai) m = 'Chưa xem được trạng thái (' + loiCai + ').';
+        else if (req) {
+          const s = req.status;
+          if (s === 'cho') m = song ? '⏳ Đã gửi ' + gio(req.tao_luc) + ' – máy cửa hàng sắp nhận…'
+            : '⏸ Đã gửi ' + gio(req.tao_luc) + ' – ĐANG CHỜ MÁY cửa hàng (máy tắt hoặc chương trình nhận lệnh chưa chạy'
+              + (nhip ? '; thấy máy lần cuối ' + hom(nhip.luc) : '') + '). Tự huỷ lúc ' + gio(req.het_han) + ' nếu máy không nhận.';
+          else if (s === 'dang_chay') m = '🔄 ' + (req.thong_bao || 'Máy đang chạy…') + ' (nhận lúc ' + gio(req.nhan_luc) + ', thường 2–5 phút)';
+          else if (s === 'xong') m = '✓ ' + (req.thong_bao || 'Xong') + ' · ' + hom(req.xong_luc);
+          else if (s === 'loi') m = '⚠ ' + (req.thong_bao || 'Lỗi') + ' · ' + hom(req.cap_nhat_luc);
+          else if (s === 'het_han') m = '⌛ Yêu cầu lúc ' + hom(req.tao_luc) + ' đã huỷ: ' + (req.thong_bao || 'máy không nhận.');
+          if (s === 'xong' && cua === req.id && !moLai) { moLai = true; m += ' – đang mở giá mới…'; setTimeout(() => location.reload(), 2500) }
+        } else if (!song) m = nhip ? 'Máy cửa hàng không chạy (thấy lần cuối ' + hom(nhip.luc) + ').' : '';
+        e.textContent = m;
+        if (b) b.disabled = !!(req && (req.status === 'cho' || req.status === 'dang_chay'));
+        lich();
+      }
+      function lich() {
+        clearTimeout(hen);
+        const dang = req && (req.status === 'cho' || req.status === 'dang_chay');
+        hen = setTimeout(() => { if (!document.hidden || dang) doc(); else lich() }, dang ? 4000 : 60000);
+      }
+      window.addEventListener('click', async ev => {
+        const b = ev.target.closest && ev.target.closest('#f5'); if (!b) return;
+        ev.preventDefault(); ev.stopImmediatePropagation();
+        if (b.disabled) return;
+        b.disabled = true; const e = document.getElementById('f5st'); if (e) e.textContent = 'Đang gửi yêu cầu…';
+        const { data, error } = await sb.rpc('yeu_cau_lam_moi', { p_job: JOB });
+        if (error) {
+          b.disabled = false;
+          if (e) e.textContent = /function|schema cache|PGRST202/.test(error.message || '') ? 'Nút F5 chưa dùng được: chưa cài hàng đợi trên Supabase (b4-lay-gia-moi.sql).'
+            : '⚠ Chưa gửi được: ' + (error.message || error.code);
+          return;
+        }
+        req = data; cua = data && data.id; moLai = false; doc();
+      }, true);
+      const bat = () => { doc(); setTimeout(ve, 900) };
+      document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', bat) : bat();
+    })();
   }
 })();
 </script>

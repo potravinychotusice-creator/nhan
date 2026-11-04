@@ -1,0 +1,340 @@
+<title>So giá leták siêu thị</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: shelf-ticket list — price-tag header, sticky filter bar (chuỗi · nhóm · chế độ), one ticket per akce with wholesaler comparison at the right */
+:root{
+  --bg:#f5f6f2; --panel:#ffffff; --fg:#1d2320; --muted:#5f6a63; --line:#dde2da;
+  --accent:#c8102e; --good:#1f7a4d; --good-bg:#e2f2e8; --warn:#8a5a00; --warn-bg:#fbefd6;
+  --info:#24548f; --info-bg:#e3ecf8; --chk:#7a3e9d; --chk-bg:#f1e6f7; --neutral-bg:#eceee9;
+  --display:"Be Vietnam Pro",system-ui,sans-serif; --body:"Be Vietnam Pro",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131715; --panel:#1b201d; --fg:#e6eae7; --muted:#9aa49e; --line:#2c332f;
+  --accent:#ff5a6e; --good:#6fd39c; --good-bg:#16301f; --warn:#f0c064; --warn-bg:#33280f;
+  --info:#8db8f0; --info-bg:#17263a; --chk:#d6a4f0; --chk-bg:#2c1d36; --neutral-bg:#232926; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131715; --panel:#1b201d; --fg:#e6eae7; --muted:#9aa49e; --line:#2c332f;
+  --accent:#ff5a6e; --good:#6fd39c; --good-bg:#16301f; --warn:#f0c064; --warn-bg:#33280f;
+  --info:#8db8f0; --info-bg:#17263a; --chk:#d6a4f0; --chk-bg:#2c1d36; --neutral-bg:#232926; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:flex;flex-direction:column;gap:14px}
+header h1{font-family:var(--display);font-weight:700;font-size:1.55rem;margin:0;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.tag{display:inline-block;background:var(--accent);color:#fff;font-weight:600;font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:3px;margin-bottom:8px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font-family:var(--mono);font-size:1.35rem;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:.8rem}
+.bar{display:flex;flex-direction:column;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding-block:8px;z-index:2;border-bottom:1px solid var(--line)}
+.line{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:5px 10px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.seg button small{opacity:.7;margin-left:3px;font-family:var(--mono)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);flex:1 1 180px;min-width:0}
+.list{display:flex;flex-direction:column;gap:6px}
+.row{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,2.3fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.5fr);gap:6px 14px;align-items:start}
+.row.buy{border-left-color:var(--good)} .row.even{border-left-color:var(--warn)} .row.chk{border-left-color:var(--chk)}
+.name{display:flex;gap:10px;align-items:flex-start;min-width:0}.nt{min-width:0}.name b{font-weight:600}
+.th{flex:0 0 48px;width:48px;height:48px;border-radius:6px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}.th img{max-width:100%;max-height:100%;object-fit:contain}
+.name .sub{display:block;color:var(--muted);font-size:.8rem}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.pill{display:inline-block;font-size:.72rem;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--neutral-bg);color:var(--muted)}
+.pill.buy{background:var(--good-bg);color:var(--good)} .pill.even{background:var(--warn-bg);color:var(--warn)}
+.pill.chain{background:var(--fg);color:var(--bg)} .pill.fut{background:var(--info-bg);color:var(--info)}
+.pill.chk{background:var(--chk-bg);color:var(--chk)} .pill.lim{background:var(--warn-bg);color:var(--warn)} .pill.end{background:var(--accent);color:#fff}
+.cell{font-variant-numeric:tabular-nums;min-width:0}
+.cell .lab{display:block;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.cell .p{font-family:var(--mono);font-size:1.02rem;font-weight:600}
+.cell.k .p{color:var(--accent)}
+.cell .m{display:block;font-size:.76rem;color:var(--muted);overflow-wrap:anywhere}
+.cell a{color:var(--info)}
+.more{align-self:center;font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:8px 16px;border-radius:999px;cursor:pointer}
+.grp{font-size:.9rem;font-weight:600;margin:10px 0 2px;color:var(--muted);text-wrap:balance}.grp small{font-weight:400;margin-left:4px}.grp.warn{color:var(--accent)}
+.row{position:relative;padding-top:28px}
+.pick{position:absolute;z-index:1;top:6px;right:10px;padding:4px;display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer}
+.pick input{width:20px;height:20px;accent-color:var(--good);cursor:pointer}
+.row.picked{outline:2px solid var(--good);outline-offset:-1px}
+.cart{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--fg);color:var(--bg);display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.cart button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:7px 14px;background:var(--bg);color:var(--fg);cursor:pointer}
+.cart button.ghost{background:transparent;color:var(--bg);border:1px solid var(--bg)}
+.cart .msg{font-size:.8rem;opacity:.85}
+.cart{transition:transform .25s ease;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;padding-block:6px calc(6px + env(safe-area-inset-bottom,0px))}.cart::-webkit-scrollbar{display:none}
+.cart.hid{transform:translateY(100%)}.cart #cartN{white-space:nowrap;font-size:.85rem;font-weight:600}.cart button{padding:4px 11px;font-size:.85rem;white-space:nowrap;flex:none}
+.cart .msg{position:absolute;left:12px;right:12px;bottom:100%;background:var(--fg);color:var(--bg);padding:4px 10px;border-radius:8px 8px 0 0}.cart .msg:empty{display:none}
+
+.wrap{padding-bottom:110px}
+.shop{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.shophead{display:flex;justify-content:space-between;align-items:center;gap:8px}.shophead h2{margin:0;font-size:1.15rem}
+.ghost{font:inherit;border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:999px;padding:5px 12px;cursor:pointer}
+.hint{margin:0;color:var(--muted);font-size:.82rem}
+.sg h3{margin:10px 0 4px;font-size:1rem}
+.si{display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.si input{width:22px;height:22px;accent-color:var(--good)}
+.si.done .sn{text-decoration:line-through;color:var(--muted)}
+.si .sp{font-family:var(--mono);font-weight:600;color:var(--accent);text-align:right}
+.si small{display:block;color:var(--muted);font-size:.76rem}
+.si .w{color:var(--accent);font-weight:600}
+.foot{color:var(--muted);font-size:.8rem;max-width:80ch}
+.empty{color:var(--muted);padding:20px;text-align:center}
+@media (max-width:760px){.row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.row .name{grid-column:1/-1}}
+[hidden]{display:none!important}
+.bar{transition:transform .25s ease}.bar.hid{transform:translateY(calc(-100% - 12px))}/* 26.10 anh: vuốt xuống thì menu ẩn hẳn, vuốt lên thì hiện lại */
+@media(max-width:700px){.bar{gap:4px;padding-block:6px}.bar .seg button{padding:4px 10px;font-size:13px}#q{padding:6px 10px}}
+.f5{margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}.bar .seg{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}.bar .seg button{white-space:nowrap;flex:none}.f5 button{font:600 13px system-ui,sans-serif;padding:5px 12px;border-radius:999px;border:1px solid #0f6b4f;background:#0f6b4f;color:#fff;cursor:pointer}.f5 button:disabled{opacity:.6}
+</style><style id="xnavcss">.xnav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px;font:500 13px system-ui,sans-serif;border-bottom:1px solid rgba(127,127,127,.25)}.xnav a{padding:4px 10px;border-radius:999px;text-decoration:none;color:inherit;border:1px solid rgba(127,127,127,.35)}.xnav a.on{background:#0f6b4f;color:#fff;border-color:#0f6b4f}</style>
+<div class="wrap">
+<nav class="xnav" id="xnav"><a href="https://claude.ai/artifact/DzWTp6yUKmPQR6UmFJQvV2" target="_blank" rel="noopener" class=on>So giá leták</a><a href="https://claude.ai/artifact/9AcLvvsnur5RUJvgr8TL6s" target="_blank" rel="noopener">Săn giá Makro</a><a href="https://claude.ai/artifact/BED1NqBcXFGoDbWn21kHnk" target="_blank" rel="noopener">Check giá ở nhiều nơi</a></nav><header>
+  <div class="f5"><b id="tagd"></b> <button type="button" id="f5">🔄 F5</button> <span id="f5st" class="hint"></span></div>
+  <p id="hdr" hidden></p>
+</header>
+<section class="stats" id="stats" hidden></section>
+<div class="bar">
+  <div class="line"><div class="seg" id="chain"></div></div>
+  <div class="line"><div class="seg" id="day"></div></div>
+  <div class="line"><div class="seg" id="grp"></div><div class="seg" id="mode"></div></div>
+  <div class="line"><input id="q" type="search" placeholder="Tìm hàng, hãng…" aria-label="Tìm"></div>
+</div>
+<div class="list" id="list"></div>
+<button class="more" id="more" type="button" hidden>Xem thêm</button>
+<section class="shop" id="shop" hidden>
+  <div class="shophead"><h2>Danh sách đi lấy hàng</h2><button type="button" class="ghost" id="closeShop">Đóng</button></div>
+  <p class="hint" id="shopHint"></p><p class="hint">🏷 = món anh bấm “＋ list” ở trang Check giá (akce rẻ hơn giá nhập), em đồng bộ sang đây.</p>
+  <div id="shopList"></div>
+</section>
+<p class="hint" id="nccInfo"></p>
+<p class="foot" id="foot"></p>
+<div class="cart" id="cart" hidden>
+  <span id="cartN"></span>
+  <button type="button" id="openShop">📋 Xem</button>
+  <button type="button" id="dlPng" aria-label="Tải PNG">PNG</button>
+  <button type="button" id="dlPdf" aria-label="Tải PDF">PDF</button>
+  <button type="button" class="ghost" id="clearPick" aria-label="Bỏ chọn hết">✕ Bỏ hết</button>
+  <span class="msg" id="cartMsg" role="status"></span>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const DATA=__DATA__;
+// 30.10: dùng NGÀY THẬT (không phải ngày quét) – trước đây akce bắt đầu sau ngày quét (Kaufland Pá–Ne 30.10 banány) vẫn bị coi là 'Sắp có'
+const today=(()=>{const n=new Date();const s=new Date(n.getTime()-n.getTimezoneOffset()*6e4).toISOString().slice(0,10);return s>DATA.meta.today?s:DATA.meta.today})();
+const daysTo=s=>s?Math.round((new Date(s)-new Date(today))/864e5):99;
+const $=s=>document.querySelector(s);
+const dd=s=>{if(!s)return'';const[y,m,d]=s.split('-');return +d+'.'+ +m+'.'};
+const M=DATA.meta;
+const F=['chain','g','cat','n','amt','p','pct','unit','the','d0','d1','fut','lim','cond','note','lk','st','diff','best','sup','cheap','oth','prod','did','inv'];
+const rows=DATA.D.map(a=>{const o={};F.forEach((k,i)=>o[k]=a[i]);if(o.d0)o.fut=o.d0>today?1:0;o.good=o.st==='buy'||o.cheap;return o});
+const CH=['Kaufland','Lidl','Penny','Albert','Billa','Tesco','Globus'];
+// hạn chính của leták mỗi chuỗi = ngày kết thúc gặp nhiều nhất (trong các món đang chạy); món kết thúc sớm hơn = akce ngắn ngày
+const MAIN={};CH.forEach(c=>{const n={};rows.filter(r=>r.chain===c&&!r.fut&&r.d1&&daysTo(r.d1)<=10).forEach(r=>n[r.d1]=(n[r.d1]||0)+1);MAIN[c]=Object.entries(n).sort((a,b)=>b[1]-a[1])[0]?.[0]||''});
+rows.forEach(r=>{r.short=!r.fut&&r.d1&&MAIN[r.chain]&&r.d1<MAIN[r.chain]});
+const WD=['CN','T2','T3','T4','T5','T6','T7'];
+const wd=s=>s?WD[new Date(s+'T12:00').getDay()]+' '+dd(s):'';
+const win=r=>(r.d0?wd(r.d0)+' – ':'nay – ')+(wd(r.d1)||'?');
+const fmt=n=>n==null?'—':Number(n).toLocaleString('cs-CZ',{minimumFractionDigits:2,maximumFractionDigits:2});
+/* 26.10 anh: đầu trang chỉ cần “giá cập nhật lúc mấy giờ” + F5 */$('#tagd').textContent='Giá cập nhật '+(M.stamp?dd(M.stamp.slice(0,10))+' '+M.stamp.slice(11,16):dd(today));
+$('#hdr').textContent=`Akce của 7 siêu thị (cả leták tuần sau nếu đã đăng) so với giá nhập s DPH: Makro Distribuce, JIP (${dd(M.sup_dates.jip)}), Tamda (${dd(M.sup_dates.tamda)}), Bidfood/Nowaco (23.10), Unikom (ceník CeposOS 24.10). Mọi giá quy về cùng khối lượng, dung tích, số cái hoặc số dávka. Lidl và hàng nhãn riêng so theo cùng loại và cùng khối lượng (ghi “khác hãng”).`;
+/* 26.10 18h anh: mặc định thấy HẾT hàng akce của siêu thị, lọc chỉ là tuỳ chọn thêm */
+const S={chain:'all',g:'all',mode:'all',day:'all',q:''};
+try{Object.assign(S,JSON.parse(localStorage.getItem('lt2')||'{}'));S.q=''}catch(e){}
+/* 26.10 anh: chỉ 3 lựa chọn – giá đẹp, rẻ hơn giá nhập, rẻ nhất giữa siêu thị (bỏ ngắn ngày, sắp có, giới hạn ks, nghi ghép sai, tất cả) */
+const MODES=[['all','Tất cả hàng',r=>true],['good','Giá đẹp',r=>r.good],['buy','Rẻ hơn giá nhập',r=>r.st==='buy'],['cheap','Rẻ nhất giữa siêu thị',r=>r.cheap],['inv','Hàng anh đang nhập',r=>!!r.inv],['invc','Siêu thị rẻ hơn hàng đang nhập → lấy',r=>r.inv&&r.p<=r.inv[2]*0.97],['own','Đề xuất akce tuần sau (nhập rẻ hơn siêu thị)',r=>r.st==='sup'&&r.best&&!r.best.x]];if(!MODES.some(m=>m[0]===S.mode))S.mode='all';
+/* 26.10 18h anh: thêm cột “Hôm nay” = akce đang chạy hôm nay (bỏ món sắp có / chưa tới ngày) */
+const onToday=r=>!r.fut&&(!r.d0||r.d0<=today)&&(!r.d1||r.d1>=today);
+/* 29.10 anh: tách leták MỚI và leták CŨ (còn hạn nhưng ra trước, hay hết hàng). Mỗi chuỗi: leták mới = ngày bắt đầu muộn nhất trong các akce đang chạy hôm nay */
+const NEWD={};CH.forEach(c=>{const A=rows.filter(r=>r.chain===c&&onToday(r)),n={};A.forEach(r=>{if(r.d0)n[r.d0]=(n[r.d0]||0)+1});
+  const ok=Object.keys(n).filter(d=>n[d]>=Math.max(10,A.length*0.15)).sort();if(ok.length)NEWD[c]=ok[ok.length-1]});/* ngày ra leták mới = ngày bắt đầu muộn nhất có ≥15 % món của chuỗi (bỏ vài món lẻ) */
+const isNew=r=>onToday(r)&&r.d0&&NEWD[r.chain]&&r.d0>=NEWD[r.chain],isOld=r=>onToday(r)&&!isNew(r);
+const DAYS=[['all','Mọi ngày',r=>true],['new','Leták mới',isNew],['old','Leták cũ',isOld],['now','Hôm nay',onToday],['fut','Sắp có',r=>!onToday(r)]];
+const DAYF=r=>(DAYS.find(d=>d[0]===S.day)||DAYS[0])[2](r);
+function base(ex){return rows.filter(r=>(ex==='chain'||S.chain==='all'||r.chain===S.chain)&&(ex==='g'||S.g==='all'||r.g===S.g)&&(ex==='day'||DAYF(r)))}
+function seg(el,items,key){el.innerHTML=items.map(([v,l,c])=>`<button type="button" data-v="${v}" aria-pressed="${S[key]===v}">${l}${c!=null?`<small>${c}</small>`:''}</button>`).join('');
+  el.onclick=e=>{const b=e.target.closest('button');if(!b)return;S[key]=b.dataset.v;shown=150;render()}}
+const na=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');let FZL=null;
+function fzVoc(list,nameOf){const V=new Map();for(const it of list){for(const w of na(nameOf(it)).split(/[^a-z]+/))if(w.length>=4)V.set(w,(V.get(w)||0)+1)}return V}
+function fzEd(a,b,lim){const m=a.length,n=b.length;if(Math.abs(m-n)>lim)return lim+1;let p2=null,p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];let lo=i;for(let j=1;j<=n;j++){let v=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));if(p2&&i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])v=Math.min(v,p2[j-2]+1);c[j]=v;if(v<lo)lo=v}if(lo>lim)return lim+1;p2=p;p=c}return p[n]}
+function fzFix(v,V){const ch=[];const q=v.split(/(\s+)/).map(tok=>{const w=na(tok);if(w.length<4||!/^[a-z]+$/.test(w)||V.has(w))return tok;const lim=w.length<=6?1:2;let best=null,bd=9,bc=0;
+  for(const [c,n] of V){let d;if(c.length>=5&&w.startsWith(c)&&w.length-c.length<=4)d=1;else{if(Math.abs(c.length-w.length)>lim)continue;d=fzEd(w,c,lim)}if(d<=lim&&(d<bd||(d===bd&&n>bc))){best=c;bd=d;bc=n}}
+  if(best){ch.push(tok+' → '+best);return best}return tok}).join('');return {q,ch}}
+let EANM=null;let shown=150;
+function render(){
+  try{localStorage.setItem('lt2',JSON.stringify({chain:S.chain,g:S.g,mode:S.mode,day:S.day}))}catch(e){}
+  const bc=base('chain'),mf=MODES.find(m=>m[0]===S.mode)[2];
+  seg($('#chain'),[['all','Tất cả',bc.filter(mf).length],...CH.map(c=>[c,c,bc.filter(r=>r.chain===c&&mf(r)).length])],'chain');
+  const bd=base('day');seg($('#day'),DAYS.map(([v,l,f])=>[v,l,bd.filter(r=>f(r)&&mf(r)).length]),'day');
+  const bg=base('g');
+  seg($('#grp'),[['all','Mọi nhóm',bg.filter(mf).length],['P','Potraviny',bg.filter(r=>r.g==='P'&&mf(r)).length],['D','Drogerie · Domácí',bg.filter(r=>r.g==='D'&&mf(r)).length]],'g');
+  const b=base();
+  seg($('#mode'),MODES.map(([v,l,f])=>[v,l,b.filter(f).length]),'mode');
+  const all=base();
+  $('#stats').innerHTML=`<div class="stat"><b>${all.filter(r=>r.short).length}</b><span>món akce ngắn ngày (hết trước leták thường)</span></div><div class="stat"><b>${all.filter(r=>r.st==='buy').length}</b><span>món rẻ hơn nơi nhập rẻ nhất</span></div><div class="stat"><b>${all.filter(r=>r.cheap).length}</b><span>món rẻ nhất giữa các siêu thị</span></div><div class="stat"><b>${all.filter(r=>r.fut).length}</b><span>món sắp có akce (leták tuần sau)</span></div><div class="stat"><b>${all.filter(r=>r.lim).length}</b><span>món Kupi ghi giới hạn ks</span></div>`;
+  const q=$('#q').value.trim().replace(/\s+/g,'').match(/^\d{8,14}$/)?$('#q').value.trim().replace(/\s+/g,''):$('#q').value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  // 30.10 anh: quét/gõ MÃ VẠCH → tra tên hàng (data/ean.json từ Unikom/CeposOS/JIP/Tamda/Makro) rồi tìm leták theo tên (leták không có mã vạch)
+  let eanNote='';let qf=r=>!q||(r.n+' '+r.chain+' '+(r.best?r.best.n:'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(q);
+  if(/^\d{8,14}$/.test(q)){
+    if(EANM===null){EANM=0;fetch('data/ean.json').then(x=>x.ok?x.json():{}).then(j=>{EANM=j||{};render()}).catch(()=>{EANM={};render()})}
+    const nm=EANM&&EANM[q];
+    if(!EANM)eanNote=`<p class="hint">Đang tra mã ${q}…</p>`;
+    else if(!nm){eanNote=`<p class="hint">Mã ${q}: chưa có trong kho mã vạch – anh gõ tên hàng.</p>`;qf=()=>false}
+    else{const nz=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+      const toks=nz(nm).split(/[^a-z0-9]+/).filter(w=>w.length>=4&&!/\d/.test(w));
+      const df=w=>rows.filter(r=>nz(r.n).includes(w)).length;
+      const sc=toks.map(w=>[w,df(w)]).filter(x=>x[1]>0&&x[1]<=60).sort((a,b)=>a[1]-b[1]);let keep=sc.filter(x=>x[1]===(sc[0]||[])[1]).map(x=>x[0]);   // từ HIẾM NHẤT (Pierot), không lấy vị chung (borůvka)
+      if(!keep.length){const pre=toks.map(w=>w.slice(0,5)).filter(w=>w.length>=4);keep=pre.filter(w=>{const c=df(w);return c>0&&c<=60})}
+      const sz=t=>{const m=nz(t).replace(',','.').match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b/);return m?(+m[1])*(m[2]==='kg'||m[2]==='l'?1000:1):0};
+      const s0=sz(nm);
+      qf=r=>{const t=nz(r.n);if(!keep.some(w=>t.includes(w)))return false;const s1=sz(r.amt);return !s0||!s1||(s1/s0>0.85&&s1/s0<1.18)};
+      eanNote=`<p class="hint">Mã ${q} = <b>${esc(nm)}</b> → tìm leták theo: ${keep.map(esc).join(', ')||'(không có từ riêng)'}</p>`;
+      if(!keep.length)qf=()=>false}
+  }
+  let L=b.filter(mf).filter(qf);
+  // 31.10 anh: gõ sai (kindr, milca, nutela, kofla, kinderler) vẫn ra – sửa chữ theo tên hàng trong leták (giống ô tìm Check giá)
+  if(q&&!L.length&&!/^\d{8,14}$/.test(q)){if(!FZL)FZL=fzVoc(rows,r=>r.n+' '+(r.best?r.best.n:''));const f=fzFix(q,FZL);if(f.ch.length){const q2=na(f.q);L=b.filter(mf).filter(r=>(r.n+' '+r.chain+' '+(r.best?r.best.n:'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(q2));eanNote+=`<p class="hint">✏️ Em hiểu là: <b>${esc(f.q)}</b> (${esc(f.ch.join(', '))})</p>`}}
+  // gom theo khoảng hạn (hết sớm trước), trong mỗi nhóm món rẻ nhất so giá nhập lên đầu
+  const key=r=>(r.fut?'2':'1')+(r.d1||'9')+'|'+(r.d0||'');
+  L.sort((x,y)=>key(x).localeCompare(key(y))||(x.diff??99)-(y.diff??99)||(y.pct??0)-(x.pct??0));
+  let last='',html=eanNote;
+  L.slice(0,shown).forEach(r=>{const k=key(r);if(k!==last){last=k;const n=L.filter(x=>key(x)===k).length;
+    const t=daysTo(r.d1);const warn=r.short||(!r.fut&&t<=2);
+    html+=`<h2 class="grp${warn?' warn':''}">${warn?'⚠️ ':''}${r.fut?'Sắp có: ':'Hạn: '}${win(r)}${!r.fut&&r.d1?` · còn ${t<=0?'hôm nay':t+' ngày'}`:''}${r.short?' · ngắn hơn leták thường':''} <small>${n} món</small></h2>`}
+    html+=card(r)});
+  $('#list').innerHTML=L.length?html:'<div class="empty">Không có món nào với bộ lọc này.</div>';
+  cartBar();
+  $('#more').hidden=L.length<=shown;$('#more').textContent=`Xem thêm (${L.length-shown} món)`;
+}
+/* 26.10 anh: gói nhiều cái (3x 150 g, 2+1 zdarma…) → chia ra giá 1 ks để so với các bên */
+const nK=r=>{const m=String(r.amt||'').match(/(\d+)\s*[x×]\s*\d/i);return m&&+m[1]>1?+m[1]:0};
+function card(r){const K=nK(r);
+  const pills=[`<span class="pill chain">${r.chain}</span>`];
+  if(r.st==='buy')pills.push(`<span class="pill buy">Rẻ hơn giá nhập ${Math.abs(r.diff).toFixed(0)}%</span>`);
+  else if(r.st==='even')pills.push(`<span class="pill even">Ngang giá nhập</span>`);
+  else if(r.st==='chk')pills.push(`<span class="pill chk">Nghi ghép sai – kiểm tra</span>`);
+  if(r.cheap)pills.push(`<span class="pill buy">Rẻ nhất giữa siêu thị</span>`);
+  if(r.fut)pills.push(`<span class="pill fut">Sắp có từ ${dd(r.d0)}</span>`);
+  else if(isOld(r)&&NEWD[r.chain])pills.push(`<span class="pill" title="Leták mới của ${r.chain} từ ${dd(NEWD[r.chain])}">Leták cũ</span>`);
+  else if(r.short)pills.push(`<span class="pill end">⚠️ Chỉ đến ${wd(r.d1)}</span>`);
+  else if(r.d1&&daysTo(r.d1)<=1)pills.push(`<span class="pill end">Hết ${daysTo(r.d1)<=0?'hôm nay':'ngày mai'}</span>`);
+  if(r.pct)pills.push(`<span class="pill">−${r.pct}%</span>`);
+  if(r.inv)pills.push(r.p<=r.inv[2]*0.97?`<span class="pill buy">Rẻ hơn giá anh đang nhập ${Math.round((1-r.p/r.inv[2])*100)}%</span>`:`<span class="pill">Hàng đang nhập</span>`);
+  if(r.st==='sup'&&r.best&&!r.best.x)pills.push(`<span class="pill fut">Ứng viên akce riêng</span>`);
+  const sup=r.sup?Object.entries(r.sup).map(([s,v])=>`${s} ${fmt(v[0])}${v[2]?' (akce)':''}`).join(' · '):'';
+  const pk=PICK[r.did];
+  return `<article class="row ${r.st}${pk?' picked':''}">
+  <label class="pick" title="Chọn để đi lấy"><input type="checkbox" data-did="${r.did}" ${pk?'checked':''}><span>${pk===2?'Đã lấy':'Lấy'}</span></label>
+  <div class="name"><span class="th" data-s="${esc((r.prod||'').split('/').pop())}">${thumb(r)}</span><div class="nt"><b>${esc(r.n)}</b><span class="sub">${esc(r.amt)}${r.note?' · '+esc(r.note):''}</span><div class="chips">${pills.join('')}</div></div></div>
+  <div class="cell k"><span class="lab">Giá siêu thị</span><span class="p">${fmt(r.p)}</span>${K?`<span class="m"><b>= ${fmt(r.p/K)} Kč/ks</b> (gói ${K} ks)</span>`:''}<span class="m">${esc(r.unit)}</span>${r.the?`<span class="m"><b>${esc(r.the)}</b></span>`:''}</div>
+  <div class="cell"><span class="lab">Hạn · giới hạn</span><span class="m">${win(r)}</span><span class="m">${r.lim?'<b>'+esc(r.lim)+'</b>':'Giới hạn ks: Kupi không ghi'}</span>${r.cond?`<span class="m">${esc(r.cond)}</span>`:''}${r.lk?`<span class="m"><a href="https://www.kupi.cz${r.lk}" target="_blank" rel="noopener">Xem trong leták ↗</a></span>`:''}</div>
+  <div class="cell"><span class="lab">Nơi nhập rẻ nhất</span>${r.best?`<span class="p">${fmt(r.best.eq)}</span>${K?`<span class="m"><b>= ${fmt(r.best.eq/K)} Kč/ks</b></span>`:''}<span class="m">${r.best.src}${r.best.x?' · khác hãng':''}: ${esc(r.best.n)}</span>${sup?`<span class="m">${sup}</span>`:''}`:'<span class="m">Không tìm thấy hàng tương đương</span>'}${r.oth?`<span class="m">Siêu thị khác: ${r.oth[0]} ${fmt(r.oth[1])}</span>`:''}${r.inv?`<span class="m">Anh đã nhập: ${r.inv[0]} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]}${r.inv[0]==='Makro'?', giá Makro hiện tại':''})</span>`:''}${r.st==='sup'&&r.pct&&r.best?`<span class="m">Giá thường siêu thị ~${fmt(r.p/(1-r.pct/100))}</span>`:''}</div>
+</article>`}
+// ảnh minh hoạ (Kupi.cz, thu nhỏ 48 px) nạp sau từ data/img.json để trang mở nhanh
+let IMG=null;
+function thumb(r){const k=(r.prod||'').split('/').pop();const u=IMG&&IMG[k];return u?`<img src="${u}" alt="" width="48" height="48" loading="lazy">`:''}
+fetch('data/img.json').then(x=>x.ok?x.json():null).then(j=>{if(!j)return;IMG=j;document.querySelectorAll('.th').forEach(e=>{const u=IMG[e.dataset.s];if(u)e.innerHTML=`<img src="${u}" alt="" width="48" height="48" loading="lazy">`})}).catch(()=>{});
+// ---- CHỌN HÀNG ĐI LẤY: lưu chung (db) để mở trên điện thoại vẫn thấy; dự phòng localStorage ----
+let PICK={};try{PICK=JSON.parse(localStorage.getItem('lt_pick')||'{}')}catch(e){}
+// Mỗi món là 1 document riêng trong collection "pk" (tích nhanh nhiều món không ghi đè nhau).
+// PEND giữ thay đổi chưa được máy chủ xác nhận, để bản cập nhật cũ từ máy chủ không làm mất dấu tích.
+let COL=null,SRV={},PEND={},SRC={};
+const cuse=n=>{try{return window.claude&&window.claude.use?window.claude.use(n):Promise.resolve(null)}catch(e){return Promise.resolve(null)}};
+const BYDID={};rows.forEach(r=>BYDID[r.did]=r);
+function merge(){const m=Object.assign({},SRV);for(const[k,v]of Object.entries(PEND)){if(v)m[k]=v;else delete m[k]}PICK=m;try{localStorage.setItem('lt_pick',JSON.stringify(PICK))}catch(e){}}
+(async()=>{try{const db=await cuse('db');if(!db)return;COL=db.collection('pk');
+  COL.onSnapshot(qs=>{const m={};qs.docs.forEach(d=>{const x=d.data()||{},v=x.s;if(v===1||v===2)m[d.id]=v;if(x.src)SRC[d.id]=x.src});SRV=m;merge();pruneExp();render();renderShop()},()=>{})}catch(e){}})();
+async function write(did,v){PEND[did]=v;merge();try{localStorage.setItem('lt_pick',JSON.stringify(PICK))}catch(e){}
+  if(!COL)return;const ref=COL.doc(String(did));
+  try{if(v)await ref.set({s:v,t:Date.now()});else await ref.delete();if(v)SRV[did]=v;else delete SRV[did];if(PEND[did]===v)delete PEND[did];merge()}
+  catch(e){$('#cartMsg').textContent='Chưa lưu được lên máy chủ ('+(e&&e.code||'lỗi')+'), dấu tích chỉ lưu trên máy này.'}}
+const EXP=r=>r?(!r.fut&&r.d1&&daysTo(r.d1)<0):rows.length>3000;   // 26.10: akce đã hết (hết ngày, hoặc không còn trong leták mới) → tự bỏ khỏi list
+let EXPN=0;function pruneExp(){if(!DATA.meta||!rows.length)return;const ex=Object.keys(PICK).filter(d=>EXP(BYDID[d]));if(!ex.length)return;EXPN+=ex.length;ex.forEach(d=>write(d,0));
+  setTimeout(()=>{const m=$('#cartMsg');if(m)m.textContent=`🗑 Đã tự bỏ ${EXPN} món hết akce khỏi list.`;setTimeout(()=>{if(m&&/hết akce/.test(m.textContent))m.textContent=''},8000)},50)}
+function picked(){return Object.keys(PICK).map(d=>BYDID[d]).filter(r=>r&&!EXP(r))}
+function setPick(did,v){write(did,v);render();renderShop()}
+document.addEventListener('change',e=>{const t=e.target;if(t.matches('.pick input'))setPick(t.dataset.did,t.checked?1:0);
+  else if(t.matches('.si input'))setPick(t.dataset.did,t.checked?2:1)});
+function cartBar(){const L=picked(),n=L.length,d=L.filter(r=>PICK[r.did]===2).length;$('#cart').hidden=!n;
+  $('#cartN').textContent=`🛒 ${n}${d?` (lấy ${d})`:''} · ${fmt(L.reduce((a,r)=>a+r.p,0))} Kč`}
+function groups(){const g={};picked().forEach(r=>(g[r.chain]=g[r.chain]||[]).push(r));
+  Object.values(g).forEach(L=>L.sort((a,b)=>(a.d1||'9').localeCompare(b.d1||'9')||a.n.localeCompare(b.n)));
+  return CH.filter(c=>g[c]).map(c=>[c,g[c]])}
+function renderShop(){cartBar();if($('#shop').hidden)return;
+  $('#shopHint').textContent='Gom theo siêu thị, món hết hạn sớm trước. Tích ô khi đã lấy hàng; danh sách lưu lại, mở trên điện thoại vẫn thấy.';
+  $('#shopList').innerHTML=groups().map(([c,L])=>`<div class="sg"><h3>${c} · ${L.length} món · ${fmt(L.reduce((a,r)=>a+r.p,0))} Kč</h3>${L.map(r=>`<div class="si${PICK[r.did]===2?' done':''}"><input type="checkbox" aria-label="Đã lấy" data-did="${r.did}" ${PICK[r.did]===2?'checked':''}><span class="th">${thumb(r)}</span><div class="sn"><b>${SRC[r.did]==='checkgia'?'<span title="Thêm từ trang Check giá (rẻ hơn giá nhập)">🏷 </span>':''}${esc(r.n)}</b><small>${esc(r.amt)} · ${r.short?'<span class="w">⚠️ chỉ đến '+wd(r.d1)+'</span>':win(r)}${r.the?' · '+esc(r.the):''}${r.cond?' · '+esc(r.cond):''}${r.lim?' · '+esc(r.lim):''}</small></div><span class="sp">${fmt(r.p)}</span></div>`).join('')}</div>`).join('')}
+$('#openShop').onclick=()=>{$('#shop').hidden=false;renderShop();$('#shop').scrollIntoView({behavior:'smooth'})};
+$('#closeShop').onclick=()=>{$('#shop').hidden=true};
+$('#clearPick').onclick=()=>{if($('#clearPick').dataset.c){Object.keys(PICK).forEach(d=>write(d,0));render();renderShop();$('#clearPick').dataset.c='';$('#clearPick').textContent='Bỏ chọn hết'}else{$('#clearPick').dataset.c='1';$('#clearPick').textContent='Bấm lần nữa để xoá'}};
+
+// ---- XUẤT ẢNH / PDF: vẽ danh sách lên canvas (ảnh minh hoạ, tên, cỡ, giá, hạn) ----
+function loadImg(u){return new Promise(r=>{if(!u)return r(null);const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=u})}
+function wrapText(x,t,maxW){const w=t.split(' ');let line='',out=[];w.forEach(p=>{const tt=line?line+' '+p:p;if(x.measureText(tt).width>maxW&&line){out.push(line);line=p}else line=tt});if(line)out.push(line);return out}
+async function pages(pageH){
+  await document.fonts.ready;const W=1240,M=50,F="'Be Vietnam Pro',system-ui,sans-serif";
+  const items=[];groups().forEach(([c,L])=>{items.push({h:c,L});L.forEach(r=>items.push({r}))});
+  const out=[];let cv,x,y;
+  const newPage=()=>{cv=document.createElement('canvas');cv.width=W;cv.height=pageH||400;x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,cv.height);y=M;
+    if(!out.length){x.fillStyle='#c8102e';x.font=`700 40px ${F}`;x.fillText('Đi lấy hàng akce',M,y+36);x.fillStyle='#5f6a63';x.font=`400 22px ${F}`;
+      x.fillText(`${picked().length} món · ${fmt(picked().reduce((a,r)=>a+r.p,0))} Kč · lập ${dd(today)} · giá theo Kupi.cz`,M,y+72);y+=100}
+    out.push(cv)};
+  const rowsH=[];
+  if(!pageH){let h=M+100;items.forEach(it=>h+=it.h?64:118);h+=M;pageH=h}
+  newPage();
+  for(const it of items){const need=it.h?64:118;if(y+need>pageH-M){newPage()}
+    if(it.h){x.fillStyle='#1d2320';x.font=`700 30px ${F}`;x.fillText(it.h,M,y+44);x.fillStyle='#1d2320';x.fillRect(M,y+56,W-2*M,3);y+=64;continue}
+    const r=it.r;const done=PICK[r.did]===2;
+    x.strokeStyle='#1d2320';x.lineWidth=3;x.strokeRect(M,y+30,40,40);if(done){x.beginPath();x.moveTo(M+8,y+50);x.lineTo(M+18,y+62);x.lineTo(M+34,y+38);x.stroke()}
+    const im=await loadImg(IMG&&IMG[(r.prod||'').split('/').pop()]);
+    x.strokeStyle='#dde2da';x.lineWidth=1;x.strokeRect(M+60,y+8,96,96);if(im){const k=Math.min(92/im.width,92/im.height);x.drawImage(im,M+108-im.width*k/2,y+56-im.height*k/2,im.width*k,im.height*k)}
+    x.fillStyle='#1d2320';x.font=`600 28px ${F}`;const nl=wrapText(x,r.n,W-2*M-180-220);x.fillText(nl[0]+(nl.length>1?'…':''),M+176,y+40);
+    x.font=`400 21px ${F}`;x.fillStyle='#5f6a63';x.fillText(`${r.amt} · ${r.unit}`,M+176,y+70);
+    const sub=[r.short?'⚠ chỉ đến '+wd(r.d1):win(r),r.the,r.cond,r.lim].filter(Boolean).join(' · ');x.fillStyle=r.short?'#c8102e':'#5f6a63';
+    x.fillText(wrapText(x,sub,W-2*M-180-220)[0],M+176,y+98);
+    x.fillStyle='#c8102e';x.font=`700 34px 'JetBrains Mono',ui-monospace,monospace`;x.textAlign='right';x.fillText(fmt(r.p)+' Kč',W-M,y+48);x.textAlign='left';
+    if(r.best&&r.st==='buy'){x.font=`400 19px ${F}`;x.fillStyle='#1f7a4d';x.textAlign='right';x.fillText(`${r.best.src} ${fmt(r.best.eq)} (${Math.abs(r.diff).toFixed(0)}% rẻ hơn)`,W-M,y+80);x.textAlign='left'}
+    x.fillStyle='#eceee9';x.fillRect(M,y+114,W-2*M,1);y+=118}
+  return out}
+async function save(name,data,msg){const dl=await cuse('downloads');if(!dl){try{const a=document.createElement('a');a.href=typeof data==='string'&&data.startsWith('data:')?data:URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=name;document.body.appendChild(a);a.click();a.remove();$('#cartMsg').textContent=msg}catch(e){$('#cartMsg').textContent='Chưa tải được file – anh chụp màn hình danh sách.'}return}
+  try{await dl.save({filename:name,data});$('#cartMsg').textContent=msg}catch(e){$('#cartMsg').textContent=e&&e.code==='declined'?'Đã huỷ tải.':'Chưa tải được ('+(e&&e.code||'lỗi')+').'}}
+const fname=ext=>`di-lay-hang-${today}.${ext}`;
+$('#dlPng').onclick=async()=>{if(!picked().length)return;if(picked().length>110){$('#cartMsg').textContent='Danh sách dài quá cho 1 ảnh, anh dùng Tải PDF.';return}$('#cartMsg').textContent='Đang tạo ảnh…';const [cv]=await pages(0);
+  cv.toBlob(b=>save(fname('png'),b,'Đã tải ảnh PNG.'),'image/png')};
+$('#dlPdf').onclick=async()=>{if(!picked().length)return;if(!window.jspdf){$('#cartMsg').textContent='Không tải được thư viện PDF, anh dùng Tải PNG.';return}
+  $('#cartMsg').textContent='Đang tạo PDF…';const P=await pages(1754);const pdf=new window.jspdf.jsPDF({unit:'px',format:[1240,1754],hotfixes:['px_scaling']});
+  P.forEach((cv,i)=>{if(i)pdf.addPage([1240,1754]);pdf.addImage(cv.toDataURL('image/jpeg',0.88),'JPEG',0,0,1240,1754)});
+  save(fname('pdf'),pdf.output('blob'),'Đã tải PDF.')};
+// danh sách chung "Nhập rẻ hơn siêu thị" (data/ncc_list.json, Claude cập nhật mỗi lần so leták)
+fetch('data/ncc_list.json').then(x=>x.ok?x.json():null).then(j=>{if(!j)return;const c={};Object.values(j.items||{}).forEach(o=>{const k=o.src;c[k]=c[k]||{a:0,w:0,p:0};if(o.st==='đã thêm')c[k].a++;else if(o.st==='chờ')c[k].w++;else c[k].p++});
+  $('#nccInfo').textContent='Danh sách chung "Nhập rẻ hơn siêu thị": '+Object.entries(c).map(([k,v])=>`${k} ${v.a+v.w+v.p} món`+(v.w?` (${v.w} chờ đăng nhập để thêm vào danh sách trên web)`:v.a?` (đã thêm ${v.a})`:' (chỉ trên trang này)')).join(' · ')+'.'}).catch(()=>{});
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+$('#q').addEventListener('input',()=>{shown=150;render()});
+$('#more').onclick=()=>{shown+=150;render()};
+$('#foot').innerHTML=`Nguồn: Kupi.cz (giá leták, hạn, ghi chú, giới hạn ks), kho giá Makro/JIP/Tamda của trang Săn giá. Giới hạn số ks/khách chỉ có khi Kupi ghi; dòng ghi “Kupi không ghi” thì chưa chắc chắn, anh mở “Xem trong leták” để xem. “Nghi ghép sai” là món rẻ hơn giá nhập trên 55 %, thường do ghép nhầm hàng hoặc quy cách, không tính là giá đẹp. Ngang giá là chênh dưới 3 %. Cập nhật ${M.stamp}.`;
+render();
+
+// ===== 26.10 anh: nút F5 để lấy leták + so giá ngay lúc cần (gọi tác vụ trên máy cửa hàng; trạng thái ở db status/f5) =====
+(function(){const TRIG='trig_01E1SHM6LG8ztKuJuwQTcmon';let S=null,DBX=null,MCPX;
+ const el=()=>document.getElementById('f5st');
+ const show=()=>{const e=el();if(!e)return;if(!S){e.textContent='';return}
+  const t=S.at?new Date(S.at).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+  e.textContent=S.state==='requested'?'⏳ đã gửi lệnh '+t:S.state==='running'?'⏳ đang lấy (~5 phút)':S.state==='done'?'✓ có giá mới '+t+' – tải lại trang':S.state==='error'?'⚠ F5 lỗi '+t:''};
+ (async()=>{try{DBX=await cuse('db');if(DBX)DBX.doc('status/f5').onSnapshot(d=>{S=d&&d.exists?d.data():null;show()},()=>{})}catch(e){}})();
+ document.addEventListener('click',async ev=>{const b=ev.target.closest&&ev.target.closest('#f5');if(!b)return;ev.preventDefault();
+  if(S&&/requested|running/.test(S.state)&&Date.now()-new Date(S.at)<40*60e3){el().textContent+=' – đang chạy rồi, anh đợi xong nhé.';return}
+  if(MCPX===undefined){try{MCPX=await cuse('mcp')}catch(e){MCPX=null}}
+  if(!MCPX){el().textContent='Bản này không bấm F5 được – mở trang trong app Claude, hoặc nhắn em “so giá leták”.';return}
+  b.disabled=true;el().textContent='Đang gửi lệnh…';
+  try{await MCPX.callTool('Claude Code Remote','fire_trigger',{trigger_id:TRIG,text:'Anh bấm F5 lúc '+new Date().toLocaleString('cs-CZ')});S={state:'requested',at:new Date().toISOString()};if(DBX)DBX.doc('status/f5').set(S).catch(()=>{});show()}
+  catch(err){const c=err&&err.code;el().textContent=(c==='approval_required'||c==='not_in_manifest')?'Cần cho phép trang dùng “Claude Code Remote” – bấm F5 lần nữa và chọn Cho phép.':'Chưa gửi được ('+(c||'lỗi')+') – anh nhắn em “so giá leták”.'}
+  finally{b.disabled=false}},true);
+ setTimeout(show,500)})();
+
+// 26.10: menu trên cùng (siêu thị, nhóm, lựa chọn, ô tìm) ẩn khi vuốt xuống, hiện lại khi vuốt lên hoặc về đầu trang
+(function(){const bar=document.querySelector('.bar');if(!bar)return;const cart=document.getElementById('cart');const H=v=>{bar.classList.toggle('hid',v);cart&&cart.classList.toggle('hid',v&&(window.innerHeight+window.scrollY<document.documentElement.scrollHeight-80))};let y0=window.scrollY,acc=0;
+ window.addEventListener('scroll',()=>{const y=window.scrollY,d=y-y0;y0=y;if(y<120){H(false);acc=0;return}if(window.innerHeight+y>=document.documentElement.scrollHeight-80)cart&&cart.classList.remove('hid');
+  acc=(Math.sign(d)===Math.sign(acc))?acc+d:d;if(acc>40)H(true);else if(acc<-30)H(false)},{passive:true});
+ document.addEventListener('focusin',e=>{if(e.target&&e.target.id==='q')H(false)})})();
+</script>
+
+<script src="voice.js" data-url="https://claude.ai/artifact/DzWTp6yUKmPQR6UmFJQvV2"></script>
