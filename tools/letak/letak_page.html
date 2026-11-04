@@ -97,6 +97,7 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
   <div class="line"><div class="seg" id="chain"></div></div>
   <div class="line"><div class="seg" id="day"></div></div>
   <div class="line"><div class="seg" id="grp"></div><div class="seg" id="mode"></div></div>
+  <div class="line"><div class="seg" id="sort"></div></div>
   <div class="line"><input id="q" type="search" placeholder="Tìm hàng, hãng…" aria-label="Tìm"></div>
 </div>
 <div class="list" id="list"></div>
@@ -139,7 +140,10 @@ const fmt=n=>n==null?'—':Number(n).toLocaleString('cs-CZ',{minimumFractionDigi
 /* 26.10 anh: đầu trang chỉ cần “giá cập nhật lúc mấy giờ” + F5 */$('#tagd').textContent='Giá cập nhật '+(M.stamp?dd(M.stamp.slice(0,10))+' '+M.stamp.slice(11,16):dd(today));
 $('#hdr').textContent=`Akce của 7 siêu thị (cả leták tuần sau nếu đã đăng) so với giá nhập s DPH: Makro Distribuce, JIP (${dd(M.sup_dates.jip)}), Tamda (${dd(M.sup_dates.tamda)}), Bidfood/Nowaco (23.10), Unikom (ceník CeposOS 24.10). Mọi giá quy về cùng khối lượng, dung tích, số cái hoặc số dávka. Lidl và hàng nhãn riêng so theo cùng loại và cùng khối lượng (ghi “khác hãng”).`;
 /* 26.10 18h anh: mặc định thấy HẾT hàng akce của siêu thị, lọc chỉ là tuỳ chọn thêm */
-const S={chain:'all',g:'all',mode:'all',day:'all',q:''};
+const S={chain:'all',g:'all',mode:'all',day:'all',sort:'han',q:''};
+/* 4.11 anh: tuỳ chọn sắp xếp riêng trong menu */
+const SORTS=[['han','Theo hạn'],['re','Giá rẻ → đắt'],['dat','Giá đắt → rẻ'],['dep','Giá đẹp nhất'],['letak','Theo leták']];
+const lkPage=r=>{const m=String(r.lk||'').match(/page=(\d+)/);return m?+m[1]:999};
 try{Object.assign(S,JSON.parse(localStorage.getItem('lt2')||'{}'));S.q=''}catch(e){}
 /* 26.10 anh: chỉ 3 lựa chọn – giá đẹp, rẻ hơn giá nhập, rẻ nhất giữa siêu thị (bỏ ngắn ngày, sắp có, giới hạn ks, nghi ghép sai, tất cả) */
 const MODES=[['all','Tất cả hàng',r=>true],['good','Giá đẹp',r=>r.good],['buy','Rẻ hơn giá nhập',r=>r.st==='buy'],['cheap','Rẻ nhất giữa siêu thị',r=>r.cheap],['inv','Hàng anh đang nhập',r=>!!r.inv],['invc','Siêu thị rẻ hơn hàng đang nhập → lấy',r=>r.inv&&r.p<=r.inv[2]*0.97],['own','Đề xuất akce tuần sau (nhập rẻ hơn siêu thị)',r=>r.st==='sup'&&r.best&&!r.best.x]];if(!MODES.some(m=>m[0]===S.mode))S.mode='all';
@@ -162,7 +166,8 @@ function fzFix(v,V){const ch=[];const q=v.split(/(\s+)/).map(tok=>{const w=na(to
   if(best){ch.push(tok+' → '+best);return best}return tok}).join('');return {q,ch}}
 let EANM=null;let shown=150;
 function render(){
-  try{localStorage.setItem('lt2',JSON.stringify({chain:S.chain,g:S.g,mode:S.mode,day:S.day}))}catch(e){}
+  try{localStorage.setItem('lt2',JSON.stringify({chain:S.chain,g:S.g,mode:S.mode,day:S.day,sort:S.sort}))}catch(e){}
+  if(!SORTS.some(x=>x[0]===S.sort))S.sort='han';seg($('#sort'),SORTS.map(([v,l])=>[v,l,null]),'sort');
   const bc=base('chain'),mf=MODES.find(m=>m[0]===S.mode)[2];
   seg($('#chain'),[['all','Tất cả',bc.filter(mf).length],...CH.map(c=>[c,c,bc.filter(r=>r.chain===c&&mf(r)).length])],'chain');
   const bd=base('day');seg($('#day'),DAYS.map(([v,l,f])=>[v,l,bd.filter(r=>f(r)&&mf(r)).length]),'day');
@@ -196,11 +201,19 @@ function render(){
   if(q&&!L.length&&!/^\d{8,14}$/.test(q)){if(!FZL)FZL=fzVoc(rows,r=>r.n+' '+(r.best?r.best.n:''));const f=fzFix(q,FZL);if(f.ch.length){const q2=na(f.q);L=b.filter(mf).filter(r=>(r.n+' '+r.chain+' '+(r.best?r.best.n:'')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(q2));eanNote+=`<p class="hint">✏️ Em hiểu là: <b>${esc(f.q)}</b> (${esc(f.ch.join(', '))})</p>`}}
   // gom theo khoảng hạn (hết sớm trước), trong mỗi nhóm món rẻ nhất so giá nhập lên đầu
   const key=r=>(r.fut?'2':'1')+(r.d1||'9')+'|'+(r.d0||'');
-  L.sort((x,y)=>key(x).localeCompare(key(y))||(x.diff??99)-(y.diff??99)||(y.pct??0)-(x.pct??0));
+  const pk=r=>r.p??1e9;
+  const dk=r=>r.st==='chk'||r.diff==null?99:r.diff;   // "nghi ghép sai" không tính là giá đẹp → cuối
+  if(S.sort==='re')L.sort((x,y)=>pk(x)-pk(y));
+  else if(S.sort==='dat')L.sort((x,y)=>pk(y)-pk(x));
+  else if(S.sort==='dep')L.sort((x,y)=>dk(x)-dk(y)||(y.cheap?1:0)-(x.cheap?1:0)||(y.pct??0)-(x.pct??0));
+  else if(S.sort==='letak')L.sort((x,y)=>CH.indexOf(x.chain)-CH.indexOf(y.chain)||(x.fut?1:0)-(y.fut?1:0)||lkPage(x)-lkPage(y)||x.n.localeCompare(y.n));
+  else L.sort((x,y)=>key(x).localeCompare(key(y))||(x.diff??99)-(y.diff??99)||(y.pct??0)-(x.pct??0));
+  const gk=S.sort==='han'?key:S.sort==='letak'?(r=>r.chain+(r.fut?' · sắp có':'')):null;
   let last='',html=eanNote;
-  L.slice(0,shown).forEach(r=>{const k=key(r);if(k!==last){last=k;const n=L.filter(x=>key(x)===k).length;
-    const t=daysTo(r.d1);const warn=r.short||(!r.fut&&t<=2);
-    html+=`<h2 class="grp${warn?' warn':''}">${warn?'⚠️ ':''}${r.fut?'Sắp có: ':'Hạn: '}${win(r)}${!r.fut&&r.d1?` · còn ${t<=0?'hôm nay':t+' ngày'}`:''}${r.short?' · ngắn hơn leták thường':''} <small>${n} món</small></h2>`}
+  L.slice(0,shown).forEach(r=>{if(gk){const k=gk(r);if(k!==last){last=k;const n=L.filter(x=>gk(x)===k).length;
+    if(S.sort==='letak')html+=`<h2 class="grp">${esc(k)} <small>${n} món · theo trang leták</small></h2>`;
+    else{const t=daysTo(r.d1);const warn=r.short||(!r.fut&&t<=2);
+    html+=`<h2 class="grp${warn?' warn':''}">${warn?'⚠️ ':''}${r.fut?'Sắp có: ':'Hạn: '}${win(r)}${!r.fut&&r.d1?` · còn ${t<=0?'hôm nay':t+' ngày'}`:''}${r.short?' · ngắn hơn leták thường':''} <small>${n} món</small></h2>`}}}
     html+=card(r)});
   $('#list').innerHTML=L.length?html:'<div class="empty">Không có món nào với bộ lọc này.</div>';
   cartBar();

@@ -101,14 +101,14 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       + '.row .lab{display:none!important}.row .cell.nhap>.p{display:none}.row .cell.nhap .m.mot{display:block;white-space:normal}.row .cell.nhap .m.re{color:var(--accent);font-weight:600}'
       + '.row .cell.nhap .ncc{font-size:12.5px!important;line-height:1.35}.row .cell.nhap .ncc b{color:var(--good)}.row .cell.k .p{font-size:18px!important}'
       + '.row .lk{font-size:11px;margin-left:4px;color:var(--info);text-decoration:none;white-space:nowrap}.row .pill.end{font-size:10px!important}'
-      + '.row .cell.k .m.don{display:none}.row .cell.k .m b{font-weight:600;color:var(--warn)}'
+      + '.row .cell.k .m.dv{font-size:11px!important;color:var(--muted)}.row .cell.k .m b{font-weight:600;color:var(--warn)}'
       + '@media (max-width:760px){.row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}';
     const so = t => { const m = String(t || '').replace(/\s/g, '').match(/(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN };
     const gonThe = r => {
       if (r.dataset.gon) return; r.dataset.gon = 1;
       const c = r.querySelectorAll(':scope > .cell'); if (c.length < 3) return;
       const gia = c[0], han = c[1], nhap = c[2]; han.classList.add('han'); nhap.classList.add('nhap');
-      gia.querySelectorAll('.m').forEach(m => { if (!m.querySelector('b')) m.classList.add('don') });   // giá: chỉ giữ thẻ/app, giá/ks gói
+      gia.querySelectorAll('.m').forEach(m => { if (!m.querySelector('b')) m.classList.add('dv') });   // giá/đơn vị (Kč/kg, Kč/100 g) – nhỏ, xám
       const p = so((gia.querySelector('.p') || {}).textContent);
       // link leták: 1 chữ nhỏ cạnh nhãn siêu thị; giới hạn ks (nếu có) vào dòng tên; bỏ cả ô hạn
       const lk = han.querySelector('a'), lim = han.querySelector('.m b'), chips = r.querySelector('.chips'), sub = r.querySelector('.name .sub');
@@ -157,7 +157,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const ds = document.createElement('div'); ds.className = 'loc-ds'; lines.forEach(l => ds.appendChild(l));
       const hang = q.closest('.line'); hang.classList.add('loc-hang');
       const nut = document.createElement('button'); nut.type = 'button'; nut.className = 'loc-nut'; hang.appendChild(nut); bar.appendChild(ds);
-      const tom = () => { const on = [...ds.querySelectorAll('button[aria-pressed="true"]')].map(b => b.childNodes[0] && b.childNodes[0].textContent.trim()).filter(t => t && !/^(Tất cả|Mọi )/.test(t)); nut.textContent = '⚙ ' + (on.length ? on.join(' · ') : 'Lọc') + ' ▾' };
+      const tom = () => { const on = [...ds.querySelectorAll('button[aria-pressed="true"]')].map(b => b.childNodes[0] && b.childNodes[0].textContent.trim()).filter(t => t && !/^(Tất cả|Mọi |Theo hạn)/.test(t)); nut.textContent = '⚙ ' + (on.length ? on.join(' · ') : 'Lọc') + ' ▾' };
       nut.onclick = e => { e.stopPropagation(); bar.classList.toggle('loc-mo') };
       ds.addEventListener('click', () => setTimeout(tom, 0));
       document.addEventListener('click', e => { if (!bar.contains(e.target)) bar.classList.remove('loc-mo') });
