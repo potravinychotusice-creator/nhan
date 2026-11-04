@@ -22,9 +22,10 @@ Luồng: điện thoại bấm 🔄 F5 trong tab Leták → hàm Supabase `yeu_c
 
 Nhật ký: `~/.local/share/cuahang/f5/f5.log` (và `chay.log`).
 
-## Ai được bấm
-- Chủ (`nhan_vien.quyen = 'chu'`) + tài khoản chủ DUYỆT RÕ trong bảng `duyet_lam_moi` (chỉ sửa bằng SQL Editor).
-  Tài khoản mới tạo tự thành 'nhan_vien' nhưng KHÔNG được bấm cho tới khi được duyệt. Tài khoản máy ('may') không gửi được yêu cầu.
+## Ai được bấm (4.11.2026: KHÔNG cần đăng nhập)
+- Khách (anon) và người đăng nhập chỉ gọi được 2 hàm: `yeu_cau_lam_moi()` (việc cố định 'letak') và `trang_thai_lam_moi()`.
+  Không đọc/ghi thẳng bảng. Toàn hệ thống 1 việc chờ/chạy; tối đa 1 lượt mới / 10 phút (khoá advisory, an toàn khi bấm cùng lúc).
+- Tài khoản máy ('may') nhận việc, báo kết quả, nhịp tim. Mật khẩu máy chỉ ở `~/.config/cuahang/may.env`.
 
 ## Xuất bản theo phiên bản (leták)
 - `checkgia_cloud.day_ver`: mọi file vào `letak/v/<ver>/…`, tải lại kiểm sha từng file, đủ hết mới ghi `letak/manifest.json` (`ver`).
@@ -32,7 +33,7 @@ Nhật ký: `~/.local/share/cuahang/f5/f5.log` (và `chay.log`).
 - Giữ 3 phiên bản gần nhất. Thử lỗi giữa chừng: `F5_LOI_SAU=2 python3 tools/f5/f5_worker.py --mot-lan`.
 
 ## An toàn
-- Điện thoại chỉ gọi được `yeu_cau_lam_moi` (chủ + tài khoản đã duyệt). Không ghi thẳng bảng được (đã thu quyền insert/update/delete).
+- Chạy ngầm: Task Scheduler → wscript (VBS, cửa sổ ẩn) → wsl.exe → f5_chay.sh; không hiện cửa sổ. Lỗi ghi `f5.log`, `chay.log`. Không ghi thẳng bảng được (đã thu quyền insert/update/delete).
 - Chỉ nhận việc trong danh sách cố định (`letak`, `checkgia`); worker chỉ có hàm cho `letak`. Không có chỗ nào nhận lệnh shell.
 - Chống bấm trùng: chỉ mục duy nhất "1 việc đang chờ/chạy mỗi loại". Hai máy/hai tiến trình không nhận trùng: `FOR UPDATE SKIP LOCKED` + `flock`.
 - Yêu cầu chờ quá 15 phút → `het_han` (không chạy lệnh cũ hôm sau). Đang chạy quá 45 phút không báo → `loi`.

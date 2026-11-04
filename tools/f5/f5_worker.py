@@ -202,7 +202,7 @@ def viec_letak(job):
     m = L['meta']
     note = f'Leták {hom_nay} {gio_kupi[-5:]} (máy, bấm F5): {m.get("n_buy")} món rẻ hơn giá nhập'
     bao(job, 'dang_chay', 'Đang đẩy lên app…')
-    try: man_moi = cc.day_ver(PUB, note, 'letak')
+    try: man_moi = cc.day_ver(PUB, note, 'letak')   # lỗi ở đây = lỗi XUẤT BẢN (manifest chưa đổi)
     except SystemExit as e: raise RuntimeError(f'Đẩy Supabase lỗi (app vẫn giữ trọn bản cũ): {e}')
     # Đọc lại từ Supabase: manifest phải trỏ đúng phiên bản vừa đẩy, index.html của phiên bản đó khớp sha
     import hashlib
@@ -220,11 +220,12 @@ def viec_letak(job):
     if os.path.exists(os.path.join(MOI, 'ncc_list.json')): shutil.copy(os.path.join(MOI, 'ncc_list.json'), D)
     shutil.copy(os.path.join(MOI, 'kupi.json'), os.path.join(D, 'kupi_last.json'))
     sd = m.get('sup_dates') or {}
-    kq = {'ver': man['ver'], 'sha': sha, 'luc_day': man.get('luc'), 'kupi_kiem': tom, 'akce': len(rows), 'dong': n, 'r_hon_nhap': m.get('n_buy'), 'sap_co': m.get('n_fut'), 'gio_kupi': gio_kupi,
+    don = man_moi.get('_don_loi')   # dọn bản cũ lỗi SAU khi đã xuất bản xong → không phải lỗi xuất bản
+    kq = {'don_loi': don, 'ver': man['ver'], 'sha': sha, 'luc_day': man.get('luc'), 'kupi_kiem': tom, 'akce': len(rows), 'dong': n, 'r_hon_nhap': m.get('n_buy'), 'sap_co': m.get('n_fut'), 'gio_kupi': gio_kupi,
           'makro': mk_ngay, 'jip': sd.get('jip'), 'tamda': sd.get('tamda'), 'thieu': thieu, 'kupi_loi': len(err)}
     cu = [f'{k} {v[8:10]}.{v[5:7]}.' for k, v in (('JIP', sd.get('jip')), ('Tamda', sd.get('tamda'))) if v]
     return kq, (f'Xong (bản {man["ver"][4:6]}{man["ver"][6:8]}-{man["ver"][9:13]}): leták {gio_kupi[8:10]}.{gio_kupi[5:7]}. {gio_kupi[-5:]} · {len(rows)} akce · {m.get("n_buy")} món rẻ hơn giá nhập · '
-                f'giá Makro {mk_ngay[8:10]}.{mk_ngay[5:7]}.' + (' · ' + ', '.join(cu) if cu else '') + (' · thiếu ' + ', '.join(thieu) if thieu else ''))
+                f'giá Makro {mk_ngay[8:10]}.{mk_ngay[5:7]}.' + (' · ' + ', '.join(cu) if cu else '') + (' · thiếu ' + ', '.join(thieu) if thieu else '') + (' · (dọn bản cũ lỗi, không ảnh hưởng)' if don else ''))
 
 
 VIEC = {'letak': viec_letak}   # chỉ các việc cố định này; tên việc lạ → không chạy
@@ -260,7 +261,7 @@ def vong_lap():
         try:
             if time.time() - nhip > 60:
                 rpc('may_nhip_tim', {'p_may': MAY, 'p_info': {'v': VERSION, 'viec': list(VIEC)}}); nhip = time.time()
-            job = rpc('may_nhan_viec', {'p_may': MAY, 'p_jobs': list(VIEC)})
+            job = rpc('may_nhan_viec', {'p_may': MAY})
             loi_lien = 0
             if job and job.get('id'):
                 log(f'Nhận yêu cầu {job["id"]} ({job["job"]})'); lam(job); nhip = 0

@@ -127,49 +127,51 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     // tải file: trình duyệt tự tải (downloads = null). F5 không qua Claude nữa (xem dưới).
     window.claude = { use: async n => n === 'db' ? DB : null };
 
-    // ===== F5 = "Lấy giá mới" qua hàng đợi Supabase (4.11.2026) =====
-    // Bấm → hàm yeu_cau_lam_moi('letak') (tự chống bấm trùng, hạn 15 phút) → máy cửa hàng (tools/f5/f5_worker.py) nhận,
-    // quét Kupi, so giá, đẩy lên kho → báo xong → trang tự mở bản mới. Máy tắt → báo rõ "đang chờ máy".
+    // ===== F5 = "Lấy leták mới" qua hàng đợi Supabase (4.11.2026) – không cần đăng nhập =====
+    // Bấm → yeu_cau_lam_moi() (cơ sở dữ liệu tự: 1 việc chờ/chạy toàn hệ thống, tối đa 1 lượt mới / 10 phút, hạn 15 phút)
+    // → máy cửa hàng (tools/f5/f5_worker.py) nhận, quét Kupi, so với giá nhập đang có, đẩy phiên bản mới → báo xong → trang mở bản mới.
     (function () {
-      const JOB = 'letak', SONG = 90e3; // máy coi là đang chạy nếu có nhịp tim trong 90 giây
-      let req = null, nhip = null, cua = null, hen = null, moLai = false, loiCai = '';
+      const SONG = 90e3; // máy coi là đang chạy nếu có nhịp tim trong 90 giây
+      let tt = null, cua = null, hen = null, moLai = false, loiCai = '';
       const gio = t => t ? new Date(t).toLocaleTimeString('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit' }) : '';
       const ngay = t => new Date(t).toLocaleDateString('cs-CZ', { timeZone: 'Europe/Prague' });
       const hom = t => t && ngay(t) === ngay(Date.now()) ? gio(t) : (t ? ngay(t) + ' ' + gio(t) : '');
+      const dmy = d => d ? d.slice(8, 10) + '.' + d.slice(5, 7) + '.' : '?';
+      // phạm vi dữ liệu đang xem: giờ lấy leták + ngày giá nhập dùng để so (không quét lại khi bấm nút)
+      const pham = () => { try { const m = DATA.meta, s = m.sup_dates || {}; return 'Leták lấy lúc ' + m.stamp.slice(8, 10) + '.' + m.stamp.slice(5, 7) + '. ' + m.stamp.slice(11, 16) + ' · giá nhập: Makro ' + dmy(m.mk_date) + ', JIP ' + dmy(s.jip) + ', Tamda ' + dmy(s.tamda) } catch (e) { return '' } };
       async function doc() {
-        try {
-          const a = await sb.from('refresh_requests').select('*').eq('job', JOB).order('tao_luc', { ascending: false }).limit(1);
-          if (a.error) throw a.error;
-          const b = await sb.from('may_nhip').select('may,luc').order('luc', { ascending: false }).limit(1);
-          req = a.data[0] || null; nhip = (b.data && b.data[0]) || null; loiCai = '';
-        } catch (e) { loiCai = /does not exist|schema cache|42P01|PGRST/.test((e && (e.message || e.code)) || '') ? 'chua_cai' : ((e && e.message) || 'mất mạng') }
+        const { data, error } = await sb.rpc('trang_thai_lam_moi');
+        if (error) loiCai = /function|schema cache|PGRST202/.test(error.message || '') ? 'chua_cai' : (error.message || 'mất mạng');
+        else { tt = data; loiCai = '' }
         ve();
       }
       function ve() {
         const e = document.getElementById('f5st'), b = document.getElementById('f5');
         if (!e) { lich(); return }
-        const song = nhip && Date.now() - new Date(nhip.luc) < SONG;
+        const song = tt && tt.may_luc && Date.now() - new Date(tt.may_luc) < SONG;
+        const s = tt && tt.id ? tt.status : null;
         let m = '';
-        if (loiCai === 'chua_cai') m = 'Nút F5 chưa dùng được: chưa cài hàng đợi trên Supabase (b4-lay-gia-moi.sql).';
+        if (loiCai === 'chua_cai') m = 'Nút chưa dùng được: chưa cài hàng đợi trên Supabase (b4-lay-gia-moi.sql).';
         else if (loiCai) m = 'Chưa xem được trạng thái (' + loiCai + ').';
-        else if (req) {
-          const s = req.status;
-          if (s === 'cho') m = song ? '⏳ Đã gửi ' + gio(req.tao_luc) + ' – máy cửa hàng sắp nhận…'
-            : '⏸ Đã gửi ' + gio(req.tao_luc) + ' – ĐANG CHỜ MÁY cửa hàng (máy tắt hoặc chương trình nhận lệnh chưa chạy'
-              + (nhip ? '; thấy máy lần cuối ' + hom(nhip.luc) : '') + '). Tự huỷ lúc ' + gio(req.het_han) + ' nếu máy không nhận.';
-          else if (s === 'dang_chay') m = '🔄 ' + (req.thong_bao || 'Máy đang chạy…') + ' (nhận lúc ' + gio(req.nhan_luc) + ', thường 2–5 phút)';
-          else if (s === 'xong') m = '✓ ' + (req.thong_bao || 'Xong') + ' · ' + hom(req.xong_luc);
-          else if (s === 'loi') m = '⚠ ' + (req.thong_bao || 'Lỗi') + ' · ' + hom(req.cap_nhat_luc);
-          else if (s === 'het_han') m = '⌛ Yêu cầu lúc ' + hom(req.tao_luc) + ' đã huỷ: ' + (req.thong_bao || 'máy không nhận.');
-          if (s === 'xong' && cua === req.id && !moLai) { moLai = true; m += ' – đang mở giá mới…'; setTimeout(() => location.reload(), 2500) }
-        } else if (!song) m = nhip ? 'Máy cửa hàng không chạy (thấy lần cuối ' + hom(nhip.luc) + ').' : '';
-        e.textContent = m;
-        if (b) b.disabled = !!(req && (req.status === 'cho' || req.status === 'dang_chay'));
+        else if (s === 'cho') m = song ? '⏳ Đã gửi ' + gio(tt.tao_luc) + ' – máy cửa hàng sắp nhận…'
+          : '⏸ Đã gửi ' + gio(tt.tao_luc) + ' – ĐANG CHỜ MÁY cửa hàng (máy tắt hoặc chương trình nhận lệnh chưa chạy'
+            + (tt.may_luc ? '; thấy máy lần cuối ' + hom(tt.may_luc) : '') + '). Tự huỷ lúc ' + gio(tt.het_han) + ' nếu máy không nhận.';
+        else if (s === 'dang_chay') m = '🔄 ' + (tt.thong_bao || 'Máy đang chạy…') + ' (nhận lúc ' + gio(tt.nhan_luc) + ', thường 2–5 phút)';
+        else {
+          if (s === 'xong') m = '✓ ' + (tt.thong_bao || 'Xong') + ' · ' + hom(tt.xong_luc);
+          else if (s === 'loi') m = '⚠ ' + (tt.thong_bao || 'Lỗi') + ' · ' + hom(tt.cap_nhat_luc);
+          else if (s === 'het_han') m = '⌛ Yêu cầu lúc ' + hom(tt.tao_luc) + ' đã huỷ: ' + (tt.thong_bao || 'máy không nhận.');
+          if (tt && tt.bam_lai_luc && new Date(tt.bam_lai_luc) > Date.now()) m += (m ? ' ' : '') + '(Bấm lại được sau ' + gio(tt.bam_lai_luc) + '.)';
+          if (!song && tt && tt.may_luc) m += (m ? ' ' : '') + 'Máy cửa hàng đang không chạy (thấy lần cuối ' + hom(tt.may_luc) + ').';
+          if (s === 'xong' && cua === tt.id && !moLai) { moLai = true; m += ' – đang mở bản mới…'; setTimeout(() => location.reload(), 2500) }
+        }
+        e.textContent = (pham() ? pham() + '\n' : '') + m; e.style.whiteSpace = 'pre-line';
+        if (b) b.disabled = s === 'cho' || s === 'dang_chay';
         lich();
       }
       function lich() {
         clearTimeout(hen);
-        const dang = req && (req.status === 'cho' || req.status === 'dang_chay');
+        const dang = tt && (tt.status === 'cho' || tt.status === 'dang_chay');
         hen = setTimeout(() => { if (!document.hidden || dang) doc(); else lich() }, dang ? 4000 : 60000);
       }
       window.addEventListener('click', async ev => {
@@ -177,16 +179,19 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
         ev.preventDefault(); ev.stopImmediatePropagation();
         if (b.disabled) return;
         b.disabled = true; const e = document.getElementById('f5st'); if (e) e.textContent = 'Đang gửi yêu cầu…';
-        const { data, error } = await sb.rpc('yeu_cau_lam_moi', { p_job: JOB });
+        const { data, error } = await sb.rpc('yeu_cau_lam_moi');
         if (error) {
           b.disabled = false;
-          if (e) e.textContent = /function|schema cache|PGRST202/.test(error.message || '') ? 'Nút F5 chưa dùng được: chưa cài hàng đợi trên Supabase (b4-lay-gia-moi.sql).'
+          if (e) e.textContent = /function|schema cache|PGRST202/.test(error.message || '') ? 'Nút chưa dùng được: chưa cài hàng đợi trên Supabase (b4-lay-gia-moi.sql).'
             : '⚠ Chưa gửi được: ' + (error.message || error.code);
           return;
         }
-        req = data; cua = data && data.id; moLai = false; doc();
+        tt = data; moLai = false;
+        if (data && !data.moi && data.status !== 'cho' && data.status !== 'dang_chay') { cua = null; ve(); if (e) e.textContent += '\nVừa có lượt lúc ' + gio(data.tao_luc) + ' – mỗi 10 phút chỉ 1 lượt.'; return }
+        cua = data && data.id;
+        doc();
       }, true);
-      // nhãn nút đúng phạm vi: chỉ làm mới leták (Kupi); giá nhập dùng bản máy đã quét (ngày ghi trong kết quả)
+      // nhãn nút đúng phạm vi
       const nhan = () => { const b = document.getElementById('f5'); if (b) { b.textContent = '🔄 Lấy leták mới'; b.title = 'Lấy lại akce 7 siêu thị (Kupi) và so với giá nhập máy cửa hàng đang có. Không quét lại Makro/JIP/Tamda.' } };
       const bat = () => { nhan(); doc(); setTimeout(ve, 900) };
       document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', bat) : bat();

@@ -106,14 +106,19 @@ def day_ver(folder, note='', bo='letak', loi_sau=None):
     man = {'ver': ver, 'files': files, 'luc': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'note': note, 'truoc': over}
     upload(tok, pre + 'manifest.json', json.dumps(man, ensure_ascii=False).encode(), 'application/json')
     print(f'ok: phiên bản {ver}, {len(files)} file, lúc {man["luc"]}')
-    try:   # dọn: giữ phiên bản hiện hành + 2 bản trước
+    try:   # dọn: giữ phiên bản hiện hành + bản trước + 1 bản nữa; KHÔNG BAO GIỜ xoá ver/truoc của manifest
+        giu = {ver, over}
         ls = req('POST', f'/storage/v1/object/list/{BUCKET}', {'prefix': pre + 'v/', 'limit': 100, 'sortBy': {'column': 'name', 'order': 'desc'}}, token=tok)
         vs = sorted({x['name'] for x in ls if x.get('name')}, reverse=True)
         for v in vs[3:]:
-            ds = req('POST', f'/storage/v1/object/list/{BUCKET}', {'prefix': f'{pre}v/{v}/', 'limit': 100}, token=tok)
-            ks = [f'{pre}v/{v}/' + x['name'] for x in ds if x.get('name')] + [f'{pre}v/{v}/data/' + x['name'] for x in (req('POST', f'/storage/v1/object/list/{BUCKET}', {'prefix': f'{pre}v/{v}/data/', 'limit': 100}, token=tok) or []) if x.get('name')]
+            if v in giu: continue
+            ks = []
+            for sub in ('', 'data/'):
+                ds = req('POST', f'/storage/v1/object/list/{BUCKET}', {'prefix': f'{pre}v/{v}/{sub}', 'limit': 100}, token=tok) or []
+                ks += [f'{pre}v/{v}/{sub}' + x['name'] for x in ds if x.get('name') and x.get('name') != 'data']
             if ks: req('DELETE', f'/storage/v1/object/{BUCKET}', {'prefixes': ks}, token=tok)
-    except SystemExit as e: print('  (dọn phiên bản cũ lỗi, bỏ qua)', e)
+    except (SystemExit, Exception) as e:
+        print('  (dọn phiên bản cũ lỗi – bản mới ĐÃ xuất bản xong)', e); man['_don_loi'] = str(e)[:200]
     return man
 
 
