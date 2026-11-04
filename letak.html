@@ -185,7 +185,9 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
         }
         req = data; cua = data && data.id; moLai = false; doc();
       }, true);
-      const bat = () => { doc(); setTimeout(ve, 900) };
+      // nhãn nút đúng phạm vi: chỉ làm mới leták (Kupi); giá nhập dùng bản máy đã quét (ngày ghi trong kết quả)
+      const nhan = () => { const b = document.getElementById('f5'); if (b) { b.textContent = '🔄 Lấy leták mới'; b.title = 'Lấy lại akce 7 siêu thị (Kupi) và so với giá nhập máy cửa hàng đang có. Không quét lại Makro/JIP/Tamda.' } };
+      const bat = () => { nhan(); doc(); setTimeout(ve, 900) };
       document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', bat) : bat();
     })();
   }

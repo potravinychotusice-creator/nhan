@@ -121,7 +121,16 @@ def anh(rows, cu):
     return cu
 
 
+def khoa_letak():
+    import fcntl
+    f = open(os.path.join(WORK, 'letak.lock'), 'w')
+    try: fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError: raise RuntimeError('Đang có 1 lượt lấy leták khác chạy trên máy (worker hoặc --mot-lan) – đợi xong rồi thử lại.')
+    return f
+
+
 def viec_letak(job):
+    _k = khoa_letak()
     hom_nay = dt.datetime.now(PRAHA).date().isoformat()
     D = os.path.join(WORK, 'letak'); MOI = os.path.join(WORK, 'letak_moi')
     os.makedirs(D, exist_ok=True)
@@ -141,9 +150,11 @@ def viec_letak(job):
     # 1. Kupi
     bao(job, 'dang_chay', 'Đang lấy leták 7 siêu thị từ Kupi.cz…')
     t0 = time.time()
-    rows, err = kupi.scrape(log=lambda m: log('  ' + m))
-    if len(rows) < 3000:
-        raise RuntimeError(f'Kupi chỉ ra {len(rows)} akce (cần ≥ 3000) – có thể Kupi đổi trang hoặc mất mạng. Lỗi: {"; ".join(err[:3])}')
+    st = {}
+    rows, err = kupi.scrape(log=lambda m: log('  ' + m), stats=st)
+    chan, tom = kupi.kiem(rows, err, st)
+    log('  Kupi kiểm:', json.dumps(tom, ensure_ascii=False))
+    if chan: raise RuntimeError('Kupi lấy thiếu – không đẩy: ' + '; '.join(chan))
     json.dump(rows, open(os.path.join(MOI, 'kupi.json'), 'w'), ensure_ascii=False)
     gio_kupi = dt.datetime.now(PRAHA).strftime('%Y-%m-%d %H:%M')
     log(f'  Kupi {len(rows)} akce trong {int(time.time() - t0)} s, lỗi {len(err)}')
@@ -192,6 +203,15 @@ def viec_letak(job):
     bao(job, 'dang_chay', 'Đang đẩy lên app…')
     try: cc.day(PUB, note, 'letak')
     except SystemExit as e: raise RuntimeError(f'Đẩy Supabase lỗi: {e}')
+    # Đọc lại từ Supabase: manifest phải có đúng bản index.html vừa đẩy (sha) và đúng ghi chú
+    import hashlib
+    sha = hashlib.sha256(open(os.path.join(PUB, 'index.html'), 'rb').read()).hexdigest()[:16]
+    man = json.loads(tai_cloud('letak/manifest.json'))
+    if man.get('files', {}).get('index.html', {}).get('sha') != sha or man.get('note') != note:
+        raise RuntimeError('Đã đẩy nhưng đọc lại Supabase không thấy bản mới (manifest khác) – chưa coi là xong.')
+    raw = tai_cloud('letak/index.html.gz')
+    if hashlib.sha256(raw).hexdigest()[:16] != sha:
+        raise RuntimeError('Đọc lại index.html trên Supabase không khớp bản vừa đẩy.')
 
     # 6. Thành công → giữ làm bản trước cho lần sau
     shutil.copy(os.path.join(MOI, 'letak_data.json'), prev)
@@ -199,7 +219,7 @@ def viec_letak(job):
     if os.path.exists(os.path.join(MOI, 'ncc_list.json')): shutil.copy(os.path.join(MOI, 'ncc_list.json'), D)
     shutil.copy(os.path.join(MOI, 'kupi.json'), os.path.join(D, 'kupi_last.json'))
     sd = m.get('sup_dates') or {}
-    kq = {'akce': len(rows), 'dong': n, 'r_hon_nhap': m.get('n_buy'), 'sap_co': m.get('n_fut'), 'gio_kupi': gio_kupi,
+    kq = {'sha': sha, 'luc_day': man.get('luc'), 'kupi_kiem': tom, 'akce': len(rows), 'dong': n, 'r_hon_nhap': m.get('n_buy'), 'sap_co': m.get('n_fut'), 'gio_kupi': gio_kupi,
           'makro': mk_ngay, 'jip': sd.get('jip'), 'tamda': sd.get('tamda'), 'thieu': thieu, 'kupi_loi': len(err)}
     cu = [f'{k} {v[8:10]}.{v[5:7]}.' for k, v in (('JIP', sd.get('jip')), ('Tamda', sd.get('tamda'))) if v]
     return kq, (f'Xong: leták {gio_kupi[8:10]}.{gio_kupi[5:7]}. {gio_kupi[-5:]} · {len(rows)} akce · {m.get("n_buy")} món rẻ hơn giá nhập · '
@@ -220,8 +240,20 @@ def lam(job):
         bao(job, 'loi', f'Lỗi: {e}. App vẫn giữ dữ liệu cũ.'[:480])
 
 
+def don_viec_do():
+    """Worker vừa khởi động: yêu cầu do chính máy này nhận mà còn 'dang_chay' = lượt trước bị tắt/mất mạng giữa chừng."""
+    q = urllib.parse.urlencode({'select': 'id,job', 'status': 'eq.dang_chay', 'nhan_boi': 'eq.' + MAY})
+    r = urllib.request.Request(cc.SB_URL + '/rest/v1/refresh_requests?' + q, headers={'apikey': cc.SB_KEY, 'Authorization': 'Bearer ' + token()})
+    with urllib.request.urlopen(r, timeout=30) as x: ds = json.loads(x.read())
+    for j in ds:
+        bao(j, 'loi', 'Máy bị tắt hoặc chương trình khởi động lại giữa lúc chạy – lượt này bỏ, app giữ dữ liệu cũ. Anh bấm lại F5.')
+
+
 def vong_lap():
     log(f'Bắt đầu nhận lệnh – máy "{MAY}", hỏi mỗi {POLL} s, giá nhập ở {GIA}')
+    for lan in range(20):
+        try: don_viec_do(); break
+        except Exception as e: log('Chưa dọn được việc dở (thử lại):', e); time.sleep(15)
     nhip = 0; loi_lien = 0
     while True:
         try:

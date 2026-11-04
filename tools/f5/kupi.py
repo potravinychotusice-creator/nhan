@@ -102,8 +102,9 @@ def get(url, tries=3):
     raise err
 
 
-def scrape(log=print):
+def scrape(log=print, stats=None):
     seen, rows, err = set(), [], []
+    stats = stats if stats is not None else {}
     jobs = [(c, s) for c in CATS for s in SHOPS]
     def one(job):
         c, s = job; out = []
@@ -123,18 +124,51 @@ def scrape(log=print):
     done = 0
     with cf.ThreadPoolExecutor(4) as ex:  # 4 luồng (kupi.js dùng 6), lịch sự với Kupi
         for c, s, pages in ex.map(one, jobs):
+            k = 0
             for h in pages:
-                n, nw = parse(h, c, s, seen, rows)
+                n, nw = parse(h, c, s, seen, rows); k += 1
                 if n == 0 or nw == 0: break
+            stats[f'{c}/{s}'] = k
             done += 1
             if done % 19 == 0: log(f'Kupi {done}/{len(jobs)} · {len(rows)} akce')
     return rows, err
+
+
+CHUOI = {'kaufland': 'Kaufland', 'lidl': 'Lidl', 'penny': 'Penny', 'albert': 'Albert', 'billa': 'Billa', 'tesco': 'Tesco', 'globus': 'Globus'}
+
+
+def kiem(rows, err, stats):
+    """Kiểm chất lượng 1 lượt quét. Trả về (lỗi_chặn, tóm_tắt). Lỗi chặn → KHÔNG đẩy lên app."""
+    import collections
+    ch = collections.Counter()
+    for r in rows:
+        t = (r.get('shop') or '').lower(); k = next((v for c, v in CHUOI.items() if c in t), None)
+        ch[k or 'khác'] += 1
+    dids = [r.get('did') for r in rows]
+    trung = len(dids) - len(set(dids))
+    khong_gia = sum(1 for r in rows if r.get('price') is None)
+    khong_han = sum(1 for r in rows if not r.get('valid'))
+    nhieu_trang = sum(1 for v in stats.values() if v > 1)
+    chan = []
+    if len(rows) < 3000: chan.append(f'chỉ {len(rows)} akce (< 3000)')
+    for v in CHUOI.values():
+        if ch[v] < 100: chan.append(f'{v} chỉ {ch[v]} akce (< 100)')
+    if trung: chan.append(f'{trung} akce trùng mã')
+    if len(err) > 6: chan.append(f'{len(err)} trang lỗi: {"; ".join(err[:3])}')
+    if khong_han > len(rows) * 0.02: chan.append(f'{khong_han} akce không có hạn')
+    if khong_gia > len(rows) * 0.02: chan.append(f'{khong_gia} akce không có giá')
+    tom = dict(tong=len(rows), chuoi=dict(ch), trung=trung, khong_gia=khong_gia, khong_han=khong_han,
+               viec=len(stats), viec_nhieu_trang=nhieu_trang, trang=sum(stats.values()), loi=len(err), tuong_lai=sum(1 for r in rows if r.get('fut')))
+    return chan, tom
 
 
 if __name__ == '__main__':
     if sys.argv[1] == '--test':
         rows = []; print(parse(open(sys.argv[2], encoding='utf-8').read(), 'alkohol', 'kaufland', set(), rows))
         print(json.dumps(rows[:4], ensure_ascii=False, indent=1)); sys.exit()
-    rows, err = scrape()
+    st = {}; t0 = time.time()
+    rows, err = scrape(stats=st)
     json.dump(rows, open(sys.argv[1], 'w'), ensure_ascii=False)
-    print('ok', len(rows), 'akce, lỗi', len(err), err[:3])
+    chan, tom = kiem(rows, err, st)
+    print(json.dumps(tom, ensure_ascii=False)); print('thời gian', int(time.time() - t0), 's; lỗi trang:', err[:5])
+    print('ĐẠT' if not chan else 'KHÔNG ĐẠT: ' + '; '.join(chan))

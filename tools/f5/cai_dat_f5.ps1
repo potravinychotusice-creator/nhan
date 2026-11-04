@@ -1,13 +1,16 @@
 # Cài "máy nhận lệnh Lấy giá mới" tự chạy khi đăng nhập Windows (đúng phiên người dùng, chạy ẩn).
 # Chạy 1 lần trong PowerShell THƯỜNG (không cần Admin):
-#   powershell -ExecutionPolicy Bypass -File \\wsl$\Ubuntu\home\<tên>\nhan\tools\f5\cai_dat_f5.ps1
-# hoặc trong Ubuntu:  powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ~/nhan/tools/f5/cai_dat_f5.ps1)"
+# Trong Ubuntu:  powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ~/nhan/tools/f5/cai_dat_f5.ps1)" -Distro "$WSL_DISTRO_NAME"
+# Chạy lại nhiều lần an toàn: ghi đè cùng 2 việc, cùng file VBS.
+param([Parameter(Mandatory=$true)][string]$Distro)   # tên bản Ubuntu (trong Ubuntu: echo $WSL_DISTRO_NAME)
 $ErrorActionPreference = 'Stop'
+$ds = (wsl.exe -l -q) -replace "`0", '' | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }
+if ($ds -notcontains $Distro) { throw "Khong thay ban WSL '$Distro'. Co: $($ds -join ', ')" }
 $ten = 'CuaHang - Nhan lenh Lay gia moi'
 $vbs = Join-Path $env:LOCALAPPDATA 'CuaHang\f5_an.vbs'
 New-Item -ItemType Directory -Force -Path (Split-Path $vbs) | Out-Null
 # VBS chạy wsl ẩn (không hiện cửa sổ đen)
-Set-Content -Path $vbs -Encoding ASCII -Value 'CreateObject("WScript.Shell").Run "wsl.exe -e bash -lc ~/nhan/tools/f5/f5_chay.sh", 0, False'
+Set-Content -Path $vbs -Encoding ASCII -Value ('CreateObject("WScript.Shell").Run "wsl.exe -d ' + $Distro + ' -e bash -lc ~/nhan/tools/f5/f5_chay.sh", 0, False')
 $act = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument ('"' + $vbs + '"')
 $trg = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
 # Tự chạy lại nếu lỗi: 3 lần, cách 1 phút; không dừng sau 72 giờ; chạy cả khi dùng pin

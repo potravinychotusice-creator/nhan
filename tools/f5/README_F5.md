@@ -13,7 +13,7 @@ Luồng: điện thoại bấm 🔄 F5 trong tab Leták → hàm Supabase `yeu_c
    pip install --user pillow        # không bắt buộc: chỉ để lấy ảnh món mới
    python3 tools/f5/f5_worker.py --kiem      # thử đăng nhập tài khoản máy (may.env) + gọi hàm
    python3 tools/f5/f5_worker.py --mot-lan   # chạy thử 1 lần thật: Kupi → so giá → đẩy lên app (2–5 phút)
-   powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ~/nhan/tools/f5/cai_dat_f5.ps1)"
+   powershell.exe -ExecutionPolicy Bypass -File "$(wslpath -w ~/nhan/tools/f5/cai_dat_f5.ps1)" -Distro "$WSL_DISTRO_NAME"
    ```
    Lệnh cuối tạo việc Windows "CuaHang - Nhan lenh Lay gia moi": tự chạy khi đăng nhập Windows (đúng phiên anh, ẩn),
    thêm việc kiểm tra mỗi 15 phút (đã chạy thì thôi, chết thì dựng lại). `f5_chay.sh` có khoá `flock` → chỉ 1 bản.
