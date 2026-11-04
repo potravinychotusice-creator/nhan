@@ -53,7 +53,8 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     if (v == null) {
       tt('Đang tải giá mới… ' + i + '/' + ten.length); ct(f.replace('data/', '') + ' · ' + Math.round(man.files[f].size / 1024) + ' KB');
       try {
-        const { data, error } = await sb.storage.from('checkgia').download(PRE + f + '.gz');
+        // 4.11: xuất bản theo phiên bản – mọi file đọc cùng phiên bản man.ver (bản cũ chưa có ver: đường dẫn cũ)
+        const { data, error } = await sb.storage.from('checkgia').download((man.ver ? PRE + 'v/' + man.ver + '/' : PRE) + f + '.gz');
         if (error) throw error;
         v = await gunzip(data);
         await luuMay(k, v);

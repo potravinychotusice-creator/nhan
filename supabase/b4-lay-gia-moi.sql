@@ -3,6 +3,8 @@
 -- Cần chạy SAU b3-check-gia.sql (đã có bảng nhan_vien với quyền 'chu' / 'nhan_vien' / 'may').
 --
 -- Thiết kế:
+--   * Chỉ CHỦ (quyen = 'chu') và tài khoản chủ DUYỆT RÕ (bảng duyet_lam_moi) được bấm. Tài khoản mới tạo
+--     (tự thành 'nhan_vien') KHÔNG có quyền này. Bảng duyet_lam_moi không ai ghi được qua API – chỉ SQL Editor.
 --   * Điện thoại KHÔNG ghi thẳng vào bảng. Chỉ gọi hàm yeu_cau_lam_moi('letak') → hàm tự kiểm quyền,
 --     chống bấm trùng (mỗi việc chỉ 1 yêu cầu đang chờ/đang chạy), đặt hạn 15 phút.
 --   * Máy cửa hàng (tài khoản quyền 'may') gọi may_nhan_viec() mỗi vài giây: lấy 1 yêu cầu đang chờ,
@@ -36,7 +38,18 @@ create table if not exists public.may_nhip (
   info jsonb
 );
 
--- 3. Quyền: mọi người đã đăng nhập (có hồ sơ nhan_vien) chỉ được ĐỌC; ghi chỉ qua hàm bên dưới
+-- 2b. Danh sách tài khoản chủ đã duyệt cho bấm "Lấy giá mới" (ngoài chủ). Thêm/bớt CHỈ bằng SQL Editor:
+--     insert into public.duyet_lam_moi(uid, ghi_chu) select id, 'nhân viên X' from auth.users where email = '...';
+--     delete from public.duyet_lam_moi where uid = (select id from auth.users where email = '...');
+create table if not exists public.duyet_lam_moi (
+  uid       uuid primary key references auth.users(id) on delete cascade,
+  duyet_luc timestamptz not null default now(),
+  ghi_chu   text
+);
+alter table public.duyet_lam_moi enable row level security;
+revoke all on public.duyet_lam_moi from anon, authenticated;   -- không đọc, không ghi qua API
+
+-- 3. Quyền: chỉ người được duyệt (và máy) được ĐỌC; ghi chỉ qua hàm bên dưới
 alter table public.refresh_requests enable row level security;
 alter table public.may_nhip enable row level security;
 revoke insert, update, delete on public.refresh_requests from anon, authenticated;
@@ -46,9 +59,11 @@ revoke all on public.may_nhip from anon;
 grant select on public.refresh_requests to authenticated;
 grant select on public.may_nhip to authenticated;
 
-create or replace function public.la_nhan_vien() returns boolean
+create or replace function public.duoc_lam_moi() returns boolean
 language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.nhan_vien where id = auth.uid())
+  select exists (select 1 from public.nhan_vien where id = auth.uid() and quyen = 'chu')
+      or exists (select 1 from public.duyet_lam_moi d join public.nhan_vien n on n.id = d.uid
+                  where d.uid = auth.uid() and n.quyen in ('chu', 'nhan_vien'))
 $$;
 create or replace function public.la_may() returns boolean
 language sql stable security definer set search_path = public as $$
@@ -56,9 +71,9 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 drop policy if exists "rr doc" on public.refresh_requests;
-create policy "rr doc" on public.refresh_requests for select to authenticated using (public.la_nhan_vien());
+create policy "rr doc" on public.refresh_requests for select to authenticated using (public.duoc_lam_moi() or public.la_may());
 drop policy if exists "nhip doc" on public.may_nhip;
-create policy "nhip doc" on public.may_nhip for select to authenticated using (public.la_nhan_vien());
+create policy "nhip doc" on public.may_nhip for select to authenticated using (public.duoc_lam_moi() or public.la_may());
 
 -- Dọn yêu cầu cũ: chờ quá hạn → het_han; đang chạy quá 45 phút (máy chết giữa chừng) → loi
 create or replace function public.rr_don_dep() returns void
@@ -71,13 +86,13 @@ language sql security definer set search_path = public as $$
    where status = 'dang_chay' and coalesce(cap_nhat_luc, nhan_luc) < now() - interval '45 minutes';
 $$;
 
--- 4. Điện thoại gửi yêu cầu (chủ + nhân viên). Trả về yêu cầu đang có nếu đã bấm rồi.
+-- 4. Điện thoại gửi yêu cầu (chủ + tài khoản đã duyệt). Trả về yêu cầu đang có nếu đã bấm rồi.
 create or replace function public.yeu_cau_lam_moi(p_job text)
 returns public.refresh_requests
 language plpgsql security definer set search_path = public as $$
 declare r public.refresh_requests;
 begin
-  if not exists (select 1 from public.nhan_vien where id = auth.uid() and quyen in ('chu', 'nhan_vien')) then
+  if not public.duoc_lam_moi() then
     raise exception 'Tài khoản này không được gửi yêu cầu lấy giá' using errcode = '42501';
   end if;
   if p_job not in ('letak', 'checkgia') then
@@ -145,6 +160,9 @@ begin
     on conflict (may) do update set luc = now(), info = coalesce(excluded.info, public.may_nhip.info);
 end $$;
 
+revoke all on function public.duoc_lam_moi() from public, anon;
+grant execute on function public.duoc_lam_moi() to authenticated;
+drop function if exists public.la_nhan_vien();
 revoke all on function public.yeu_cau_lam_moi(text) from public, anon;
 revoke all on function public.may_nhan_viec(text, text[]) from public, anon;
 revoke all on function public.may_bao(bigint, text, text, text, jsonb) from public, anon;
@@ -155,7 +173,12 @@ grant execute on function public.may_nhan_viec(text, text[]) to authenticated;
 grant execute on function public.may_bao(bigint, text, text, text, jsonb) to authenticated;
 grant execute on function public.may_nhip_tim(text, jsonb) to authenticated;
 
--- Kiểm tra: phải ra 2 bảng và 4 hàm
-select table_name from information_schema.tables where table_schema = 'public' and table_name in ('refresh_requests', 'may_nhip');
+-- Kiểm tra 1: các tài khoản hiện có và ai được bấm "Lấy giá mới"
+select u.email, n.quyen, (n.quyen = 'chu' or d.uid is not null) and n.quyen <> 'may' as duoc_bam_f5,
+       u.created_at::date as tao_ngay, u.last_sign_in_at::date as dang_nhap_cuoi
+  from auth.users u left join public.nhan_vien n on n.id = u.id left join public.duyet_lam_moi d on d.uid = u.id
+ order by u.created_at;
+-- Kiểm tra 2: phải ra 3 bảng và 4 hàm
+select table_name from information_schema.tables where table_schema = 'public' and table_name in ('refresh_requests', 'may_nhip', 'duyet_lam_moi');
 select routine_name from information_schema.routines where routine_schema = 'public'
    and routine_name in ('yeu_cau_lam_moi', 'may_nhan_viec', 'may_bao', 'may_nhip_tim');

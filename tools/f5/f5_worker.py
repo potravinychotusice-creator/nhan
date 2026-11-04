@@ -140,11 +140,12 @@ def viec_letak(job):
     prev = os.path.join(D, 'letak_latest.json')
     if not os.path.exists(prev) or not os.path.exists(os.path.join(D, 'img.json')):
         bao(job, 'dang_chay', 'Lần đầu: tải bản leták trước từ cloud…')
-        h = tai_cloud('letak/index.html.gz').decode('utf-8')
+        m0 = json.loads(tai_cloud('letak/manifest.json')); vp = f'letak/v/{m0["ver"]}/' if m0.get('ver') else 'letak/'
+        h = tai_cloud(vp + 'index.html.gz').decode('utf-8')
         i = h.index('const DATA=') + len('const DATA='); j = h.index('\n', i)
         open(prev, 'w', encoding='utf-8').write(h[i:j].rstrip().rstrip(';').replace('<\\/', '</'))
         for f in ('img.json', 'ncc_list.json', 'ean.json'):
-            try: open(os.path.join(D, f), 'wb').write(tai_cloud('letak/data/' + f + '.gz'))
+            try: open(os.path.join(D, f), 'wb').write(tai_cloud(vp + 'data/' + f + '.gz'))
             except Exception as e: log('  chưa có', f, e)
 
     # 1. Kupi
@@ -195,23 +196,23 @@ def viec_letak(job):
     shutil.copy(os.path.join(MOI, 'so-gia-letak.html'), os.path.join(PUB, 'index.html'))
     json.dump(img, open(os.path.join(PUB, 'data', 'img.json'), 'w'), separators=(',', ':'))
     if os.path.exists(os.path.join(MOI, 'ncc_list.json')): shutil.copy(os.path.join(MOI, 'ncc_list.json'), os.path.join(PUB, 'data'))
-    # data/ean.json: không làm lại ở đây → cloud giữ bản cũ (day() tự giữ file không có)
+    # data/ean.json: không làm lại ở đây → day_ver chép bản của phiên bản cũ sang phiên bản mới
 
     # 5. Đẩy Supabase (manifest ghi CUỐI CÙNG → app chỉ đổi sang bản mới khi mọi file đã lên)
     m = L['meta']
     note = f'Leták {hom_nay} {gio_kupi[-5:]} (máy, bấm F5): {m.get("n_buy")} món rẻ hơn giá nhập'
     bao(job, 'dang_chay', 'Đang đẩy lên app…')
-    try: cc.day(PUB, note, 'letak')
-    except SystemExit as e: raise RuntimeError(f'Đẩy Supabase lỗi: {e}')
-    # Đọc lại từ Supabase: manifest phải có đúng bản index.html vừa đẩy (sha) và đúng ghi chú
+    try: man_moi = cc.day_ver(PUB, note, 'letak')
+    except SystemExit as e: raise RuntimeError(f'Đẩy Supabase lỗi (app vẫn giữ trọn bản cũ): {e}')
+    # Đọc lại từ Supabase: manifest phải trỏ đúng phiên bản vừa đẩy, index.html của phiên bản đó khớp sha
     import hashlib
     sha = hashlib.sha256(open(os.path.join(PUB, 'index.html'), 'rb').read()).hexdigest()[:16]
     man = json.loads(tai_cloud('letak/manifest.json'))
-    if man.get('files', {}).get('index.html', {}).get('sha') != sha or man.get('note') != note:
-        raise RuntimeError('Đã đẩy nhưng đọc lại Supabase không thấy bản mới (manifest khác) – chưa coi là xong.')
-    raw = tai_cloud('letak/index.html.gz')
+    if man.get('ver') != man_moi['ver'] or man.get('files', {}).get('index.html', {}).get('sha') != sha:
+        raise RuntimeError('Đã đẩy nhưng đọc lại Supabase không thấy phiên bản mới – chưa coi là xong.')
+    raw = tai_cloud(f'letak/v/{man["ver"]}/index.html.gz')
     if hashlib.sha256(raw).hexdigest()[:16] != sha:
-        raise RuntimeError('Đọc lại index.html trên Supabase không khớp bản vừa đẩy.')
+        raise RuntimeError('Đọc lại index.html của phiên bản mới không khớp.')
 
     # 6. Thành công → giữ làm bản trước cho lần sau
     shutil.copy(os.path.join(MOI, 'letak_data.json'), prev)
@@ -219,10 +220,10 @@ def viec_letak(job):
     if os.path.exists(os.path.join(MOI, 'ncc_list.json')): shutil.copy(os.path.join(MOI, 'ncc_list.json'), D)
     shutil.copy(os.path.join(MOI, 'kupi.json'), os.path.join(D, 'kupi_last.json'))
     sd = m.get('sup_dates') or {}
-    kq = {'sha': sha, 'luc_day': man.get('luc'), 'kupi_kiem': tom, 'akce': len(rows), 'dong': n, 'r_hon_nhap': m.get('n_buy'), 'sap_co': m.get('n_fut'), 'gio_kupi': gio_kupi,
+    kq = {'ver': man['ver'], 'sha': sha, 'luc_day': man.get('luc'), 'kupi_kiem': tom, 'akce': len(rows), 'dong': n, 'r_hon_nhap': m.get('n_buy'), 'sap_co': m.get('n_fut'), 'gio_kupi': gio_kupi,
           'makro': mk_ngay, 'jip': sd.get('jip'), 'tamda': sd.get('tamda'), 'thieu': thieu, 'kupi_loi': len(err)}
     cu = [f'{k} {v[8:10]}.{v[5:7]}.' for k, v in (('JIP', sd.get('jip')), ('Tamda', sd.get('tamda'))) if v]
-    return kq, (f'Xong: leták {gio_kupi[8:10]}.{gio_kupi[5:7]}. {gio_kupi[-5:]} · {len(rows)} akce · {m.get("n_buy")} món rẻ hơn giá nhập · '
+    return kq, (f'Xong (bản {man["ver"][4:6]}{man["ver"][6:8]}-{man["ver"][9:13]}): leták {gio_kupi[8:10]}.{gio_kupi[5:7]}. {gio_kupi[-5:]} · {len(rows)} akce · {m.get("n_buy")} món rẻ hơn giá nhập · '
                 f'giá Makro {mk_ngay[8:10]}.{mk_ngay[5:7]}.' + (' · ' + ', '.join(cu) if cu else '') + (' · thiếu ' + ', '.join(thieu) if thieu else ''))
 
 
