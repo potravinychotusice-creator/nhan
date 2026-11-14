@@ -57,7 +57,8 @@ select{font:inherit;font-size:15px;padding:8px;border:1px solid var(--v);border-
   const loi = s => { $('tt').innerHTML = '<div class="loi">' + s + '</div>' };
   if (!sb) { loi('Mở từ app Cửa hàng'); return }
   const cache = await caches.open('cuahang-checkgia').catch(() => null);
-  const gunzip = async blob => await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  // 14.11: blob do P.SB (cửa sổ cha) tạo → trên iPhone (Safari) DecompressionStream báo "Invalid type should be ArrayBuffer" vì khác cửa sổ. Chép sang Blob của trang này trước khi giải nén.
+  const gunzip = async blob => await new Response(new Blob([new Uint8Array(await blob.arrayBuffer())]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
   const F = 'data/akce_unikom.json';
   let D;
   try {

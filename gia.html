@@ -29,7 +29,8 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   const cache = await caches.open(KHO).catch(() => null);
   const docMay = async k => { try { const r = cache && await cache.match('/_cg/' + k); return r ? await r.text() : null } catch (e) { return null } };
   const luuMay = async (k, v) => { try { cache && await cache.put('/_cg/' + k, new Response(v)) } catch (e) {} };
-  const gunzip = async blob => await new Response(blob.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  // 14.11: blob do P.SB (cửa sổ cha) tạo → trên iPhone (Safari) DecompressionStream báo "Invalid type should be ArrayBuffer" vì khác cửa sổ. Chép sang Blob của trang này trước khi giải nén.
+  const gunzip = async blob => await new Response(new Blob([new Uint8Array(await blob.arrayBuffer())]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 
   // 1. Mục lục trên cloud (nhỏ); mất mạng → bản trên máy
   let man = null, manMay = null;
