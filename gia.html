@@ -126,6 +126,14 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   function lop() {
     const P = window.parent, sb = P.SB, F = P.__CG.files, man = P.__CG.man;
     window.LAN = 1; // ảnh tải thẳng từ web NCC (như bản Wi-Fi)
+    // 15.11 anh: tab "Săn Makro" = chính trang Check giá (cùng dữ liệu, không tải thêm), mở sẵn lọc "Rẻ nhất ở Makro".
+    // Bộ lọc của tab này lưu riêng (khoá 'san:…') để không đổi bộ lọc của tab Check giá.
+    if (/[?&]san\b/.test(location.search)) {
+      const g = Storage.prototype.getItem, s = Storage.prototype.setItem, DF = { dod_sel: 'Makro', dod_mode: 'all' };
+      Storage.prototype.getItem = function (k) { const v = g.call(this, 'san:' + k); return v == null && k in DF ? DF[k] : v };
+      Storage.prototype.setItem = function (k, v) { return s.call(this, 'san:' + k, v) };
+      window.__SAN = 1;
+    }
     const goc = window.fetch.bind(window);
     window.fetch = (u, o) => {
       const s = typeof u === 'string' ? u : (u && u.url) || '';
@@ -281,6 +289,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const loc = document.createElement('p'); loc.id = 'locdang';
       const h2 = [...document.querySelectorAll('h2')].find(h => /Hàng anh đã mua/.test(h.textContent));
       if (h2) h2.after(loc);
+      if (h2 && window.__SAN) h2.textContent = 'Săn Makro · hàng anh đã mua, Makro đang rẻ nhất';
       const capNhat = () => {
         const on = [...ng.querySelectorAll('[aria-pressed=true]')].map(b => b.firstChild ? b.firstChild.textContent.trim() : b.textContent.trim()).filter(Boolean);
         const fv = f && f.value.trim();

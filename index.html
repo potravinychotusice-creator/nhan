@@ -165,7 +165,7 @@ function moTab(t) {
   if (t === 'akce' && !$('t-akce').firstChild) { const f = document.createElement('iframe'); f.src = 'akce.html'; f.title = 'Akce Unikom'; $('t-akce').appendChild(f) }
   try { localStorage.setItem('tab', t) } catch (e) {}
   if (t === 'letak' && !$('t-letak').firstChild) { const f = document.createElement('iframe'); f.src = 'letak.html'; f.title = 'So giá leták'; $('t-letak').appendChild(f) }
-  if (t === 'san' && !$('t-san').firstChild) { const f = document.createElement('iframe'); f.src = 'san.html'; f.title = 'Săn hàng Makro'; $('t-san').appendChild(f) }
+  if (t === 'san' && !$('t-san').firstChild) { const f = document.createElement('iframe'); f.src = 'gia.html?san=1'; f.title = 'Săn hàng Makro'; $('t-san').appendChild(f) }
   if (t === 'toi') hienGokasa();
 }
 // Check giá: trang thật nằm trong kho kín Supabase, gia.html tải về. Mở lại tab sau 15 phút → xem có giá mới không.
