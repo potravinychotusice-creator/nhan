@@ -96,7 +96,26 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     + '.row .pc.none{display:none!important}.row .pc.cur{order:-2;outline:0;border-style:dashed}.row .pc.best{order:-1;border-color:var(--accent)}'
     + '.row .pc .lab{display:inline!important;font-size:.75rem;color:var(--muted);font-weight:600}.row .pc .num{font-size:.95rem}'
     + '.row .pc .m{display:none!important;flex:1 1 100%}.row .pc.mo .m{display:block!important;-webkit-line-clamp:3}.row .pc.mo{border-radius:10px}'
-    + '.row .pc .go-l.mini{margin:0}.row .pc .num .ok{position:static!important;margin-left:3px}.row .th{width:44px;height:44px}}</style>';
+    + '.row .pc .go-l.mini{margin:0}.row .pc .num .ok{position:static!important;margin-left:3px}.row .th{width:44px;height:44px}'
+    // 15.11 anh chọn MẪU B: 1 dòng/món (ảnh · tên + nơi rẻ nhất · giá rẻ nhất · đang mua), chạm để xổ giá các nơi
+    + '.chipB{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 6px}.chipB::-webkit-scrollbar{display:none}.chipB .seg{display:flex;flex-wrap:nowrap!important;gap:6px}'
+    + '.chipB button{flex:none;white-space:nowrap;border-radius:999px!important;padding:6px 12px!important;font-size:13px!important;min-height:0!important;border:0!important;background:#f1f2f4!important;color:#3b404b!important}'
+    + '.chipB button[aria-pressed=true]{background:#16181d!important;color:#fff!important;font-weight:600}.chipB button small{margin-left:4px;opacity:.75}'
+    + '.hdB{display:grid;grid-template-columns:44px minmax(0,1fr) 70px 60px;gap:8px;padding:6px 10px;font-size:11px;color:#5b6170;border-bottom:1px solid #eef0f2}.hdB span:nth-child(n+3){text-align:right}'
+    + '.row.mb{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px;padding:0!important;border-radius:0!important;border-width:0 0 1px!important;background:#fff!important;box-shadow:none!important;margin:0!important}'
+    + '.row.mb>.c1{display:none!important}.row.mb>.pc{display:none!important}'
+    + '.tomB{all:unset;box-sizing:border-box;grid-column:1/-1!important;cursor:pointer;display:grid;grid-template-columns:44px minmax(0,1fr) 70px 60px;gap:8px;align-items:center;padding:8px 10px;min-height:56px;width:100%}'
+    + '.tomB .anh{width:44px;height:44px;border-radius:8px;background:#eceef1;border:1px solid #e3e5e9;object-fit:contain;display:flex;align-items:center;justify-content:center;font-size:18px}'
+    + '.tomB .tn{display:flex;flex-direction:column;gap:2px;min-width:0}.tomB .tn b{font-size:13.5px;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}'
+    + '.tomB .tn i{font-style:normal;font-size:11.5px;color:#0f6b3a;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tomB .tn i.eq{color:#5b6170;font-weight:500}.tomB .tn i.chk{color:#b45309}'
+    + '.tomB .re{text-align:right;font-size:15px;font-weight:700;color:#0f6b3a}.tomB .dm{text-align:right;font-size:12.5px;color:#5b6170}'
+    + '.row.mb.mo{background:#fafbfc!important}.row.mb.mo>.pc:not(.none){display:flex!important;flex-direction:column;border-radius:8px!important;padding:5px 7px!important;background:#f4f5f7!important;border:1px solid #f4f5f7!important;margin:0 0 0 0;order:0!important;outline:0!important}'
+    + '.row.mb.mo>.pc.best{background:#dcf3e5!important;border-color:#9fd8b6!important}.row.mb.mo>.pc.cur{background:#fff!important;border:1.5px solid #1d4ed8!important}'
+    + '.row.mb.mo>.pc .lab{font-size:10.5px!important;color:#5b6170}.row.mb.mo>.pc .num{font-size:13.5px!important;font-weight:700}.row.mb.mo>.pc .m{display:none!important}'
+    + '.row.mb.mo>.pc:first-of-type{margin-left:10px}.row.mb.mo>.pc:last-child{margin-bottom:10px}'
+    + '.row.mb.mo .xoB{grid-column:1/-1;padding:0 10px 4px;font-size:12px;color:#5b6170;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}.row.mb .xoB{display:none}.row.mb.mo .xoB{display:flex}.xoB .pill{font-size:11.5px}'
+    + '.row.mb.mo{padding:0 10px 10px!important}.row.mb.mo .tomB{margin:0 -10px;width:calc(100% + 20px)}.row.mb.mo>.pc:first-of-type{margin-left:0}'
+    + 'details.grp>.list{gap:0!important}details.grp{background:#fff;padding-inline:0!important}details.grp>summary{padding-inline:10px}}</style>';
   const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<script>(' + lop.toString() + ')()<\/script>' + css;
   const a = html.indexOf('<title>'), b = html.indexOf('</title>');
@@ -210,7 +229,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'cam'; b.textContent = '📷'; b.title = 'Quét mã bằng camera'; b.setAttribute('aria-label', 'Quét mã bằng camera');
       b.onclick = camTrucTiep; go.after(b);
       const q = document.getElementById('q'); if (q && matchMedia('(pointer:coarse)').matches) q.removeAttribute('autofocus'); // điện thoại: không tự bật bàn phím
-      xepGon(); tuTim();
+      xepGon(); tuTim(); mauB();
       document.addEventListener('click', e => { const pc = e.target.closest && e.target.closest('.row .pc'); if (pc && !e.target.closest('a,button')) pc.classList.toggle('mo') });
       const st = document.getElementById('st');
       if (st) { const an = () => { st.hidden = /^Sẵn sàng/.test(st.textContent.trim()) }; new MutationObserver(an).observe(st, { childList: true, characterData: true, subtree: true }); an() }
@@ -278,6 +297,50 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       if (f) f.addEventListener('keydown', e => { if (e.key === 'Enter') dong() });
       new MutationObserver(capNhat).observe(ng, { subtree: true, attributes: true, attributeFilter: ['aria-pressed', 'hidden'], childList: true });
       capNhat();
+    }
+
+    // ---- MẪU B (anh chọn 15.11): chỉ trên điện thoại ----
+    function mauB() {
+      const dt = matchMedia('(max-width:760px)');
+      const list = document.getElementById('list'), mode = document.getElementById('mode'); if (!list) return;
+      // chip lọc (Nên đổi nơi / akce / đang rẻ nhất / tất cả…) nằm ngay trên danh sách, không phải mở ☰
+      const loc = document.getElementById('locdang');
+      const chip = document.createElement('div'); chip.className = 'chipB';
+      const hd = document.createElement('div'); hd.className = 'hdB'; hd.innerHTML = '<span></span><span>Món · nơi rẻ nhất</span><span>Rẻ nhất</span><span>Đang mua</span>';
+      const datChip = () => {
+        if (dt.matches) { if (mode && mode.parentNode !== chip) chip.appendChild(mode); (loc || list).before(chip); list.before(hd) }
+        else { chip.remove(); hd.remove() }
+      };
+      datChip(); dt.addEventListener && dt.addEventListener('change', () => { datChip(); quet() });
+      const so = t => { const m = String(t || '').replace(/\s/g, '').match(/\d+(?:[.,]\d+)?/); return m ? m[0] : '' };
+      function gon(r) {
+        if (r.dataset.b) return; r.dataset.b = 1;
+        const ten = r.querySelector('.c1 .ct > b'), img = r.querySelector('.c1 img.th');
+        const pcs = [...r.querySelectorAll(':scope > .pc:not(.none)')], cur = r.querySelector(':scope > .pc.cur');
+        const best = pcs.find(p => p.classList.contains('best') && !p.classList.contains('cur')) || pcs.find(p => p.classList.contains('best')) || cur;
+        const pill = r.querySelector('.c1 .pill.go, .c1 .pill.chk');
+        const pt = pill ? (pill.textContent.match(/(\d+)\s*%/) || [])[1] : null;
+        const lab = best && best.querySelector('.lab') ? best.querySelector('.lab').textContent.trim() : '';
+        let noi, cls = '';
+        if (best === cur || !best) { noi = 'Đang rẻ nhất'; cls = 'eq' }
+        else if (pill && pill.classList.contains('chk')) { noi = lab + ' · −' + pt + '% kiểm tra'; cls = 'chk' }
+        else noi = lab + (pt ? ' · −' + pt + '%' : '');
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'tomB';
+        b.innerHTML = (img ? '<img class="anh" alt="" loading="lazy" src="' + img.src + '" onerror="this.outerHTML=\'<span class=anh>🛒</span>\'">' : '<span class="anh">🛒</span>')
+          + '<span class="tn"><b></b><i class="' + cls + '"></i></span><span class="re">' + so(best && best.querySelector('.num') ? best.querySelector('.num').textContent : '') + '</span><span class="dm">' + so(cur && cur.querySelector('.num') ? cur.querySelector('.num').textContent : '') + '</span>';
+        b.querySelector('.tn b').textContent = ten ? ten.textContent.replace(/^✓\s*/, '') : '';
+        b.querySelector('.tn i').textContent = noi;
+        b.onclick = () => r.classList.toggle('mo');
+        // phần xổ: nơi đang mua, cảnh báo/akce, nút ⚑ báo sai (lấy từ dòng gốc)
+        const xo = document.createElement('div'); xo.className = 'xoB';
+        const m = r.querySelector('.c1 .ct > .m'); if (m) xo.appendChild(m.cloneNode(true)).querySelectorAll('a.repl').forEach(a => a.remove());
+        r.querySelectorAll('.c1 .ct > .pill, .c1 .ct > a, .c1 .repl').forEach(x => xo.appendChild(x));
+        r.prepend(b); b.after(xo); r.classList.add('mb');
+      }
+      function boGon(r) { r.classList.remove('mb', 'mo') }
+      function quet() { list.querySelectorAll('article.row').forEach(r => dt.matches ? (r.dataset.b ? r.classList.add('mb') : gon(r)) : boGon(r)) }
+      new MutationObserver(() => { if (dt.matches) quet() }).observe(list, { childList: true, subtree: true });
+      quet();
     }
 
     // F5: hôm nay đã quét đủ thì không quét lại (đỡ gửi nhiều lệnh vào web NCC)

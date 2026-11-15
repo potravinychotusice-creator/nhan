@@ -103,7 +103,14 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       + '.row .cell.nhap .ncc{font-size:12.5px!important;line-height:1.35}.row .cell.nhap .ncc b{color:var(--good)}.row .cell.k .p{font-size:18px!important}'
       + '.row .lk{font-size:11px;margin-left:4px;color:var(--info);text-decoration:none;white-space:nowrap}.row .pill.end{font-size:10px!important}'
       + '.row .cell.k .m.dv{font-size:11px!important;color:var(--muted)}.row .cell.k .m b{font-weight:600;color:var(--warn)}'
-      + '@media (max-width:760px){.row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}';
+      + '@media (max-width:760px){.row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}}'
+      // 15.11 anh: hợp cả máy tính và điện thoại – ô "Lấy" không đè lên tên; máy tính xếp thẻ 2–3 cột cho đỡ trống
+      + '.row .name{padding-right:58px}.row .name b,.row .name .t{overflow-wrap:anywhere}.pick{top:4px!important;right:6px!important}'
+      + '@media (min-width:980px){.wrap{max-width:1560px!important}'
+      + '.list{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:8px!important;align-items:stretch}'
+      + '.list>:not(.row){grid-column:1/-1}.row{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)!important;height:100%;box-sizing:border-box;align-content:start}.row .name{grid-column:1/-1}'
+      + '.bar,.loc-hang{max-width:none}}'
+      + '@media (min-width:1500px){.list{grid-template-columns:repeat(3,minmax(0,1fr))}}';
     const so = t => { const m = String(t || '').replace(/\s/g, '').match(/(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN };
     const gonThe = r => {
       if (r.dataset.gon) return; r.dataset.gon = 1;
@@ -133,7 +140,8 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const ms = [...nhap.querySelectorAll('.m')]; let ds = null, ten = null;
       ms.forEach(m => {
         const t = m.textContent;
-        if (/^Anh đã nhập:/.test(t)) { const mm = t.match(/^Anh đã nhập: (\S+ [\d,]+).*lần cuối ([^,)]+)/); m.textContent = mm ? 'Đã nhập: ' + mm[1] + ' (' + mm[2] + ')' : t; m.style.color = 'var(--muted)' }
+        if (/^Anh đã nhập:/.test(t)) { const mm = t.match(/^Anh đã nhập: (\S+ [\d,]+).*lần cuối ([^,)]+)/), mc = t.match(/^Anh đã nhập: ([^,]+),.*?,(\d+[.,]\d+),(\d{1,2}\.\d{1,2}\.\d{4})/);   // 15.11: dữ liệu dạng 'NCC,tên,giá,ngày,…'
+          m.textContent = mm && !/undefined/.test(mm[2]) ? 'Đã nhập: ' + mm[1] + ' (' + mm[2] + ')' : mc ? 'Đã nhập: ' + mc[1] + ' ' + mc[2].replace('.', ',') + ' (' + mc[3] + ')' : t; m.style.color = 'var(--muted)' }
         else if (/^Siêu thị khác:/.test(t)) { if (!(so(t.replace(/^[^0-9]*/, '')) < p)) m.remove(); else { m.textContent = t.replace('Siêu thị khác:', 'Rẻ hơn ở'); m.classList.add('re') } }
         else if (/^Giá thường/.test(t)) m.remove();
         else if (!ds && !/^Anh đã nhập/.test(t) && /^([^:·]+ \d+(,\d+)?)( · [^:·]+ \d+(,\d+)?)*$/.test(t.trim())) ds = m;
