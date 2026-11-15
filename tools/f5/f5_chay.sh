@@ -6,6 +6,7 @@ mkdir -p ~/.local/share/cuahang/f5
 exec 9>~/.local/share/cuahang/f5/f5.lock
 flock -n 9 || { echo "f5_worker đang chạy rồi"; exit 0; }
 while true; do
+  git -C ../.. pull -q --ff-only >> ~/.local/share/cuahang/f5/chay.log 2>&1 || true   # 15.11: lấy code mới trước mỗi lần (chạy lại)
   python3 f5_worker.py >> ~/.local/share/cuahang/f5/chay.log 2>&1
   echo "$(date '+%F %T') f5_worker dừng (mã $?) – chạy lại sau 10 s" >> ~/.local/share/cuahang/f5/chay.log
   sleep 10

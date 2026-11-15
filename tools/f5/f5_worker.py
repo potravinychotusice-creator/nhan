@@ -36,7 +36,9 @@ MAY = CFG.get('MAY_TEN') or ('may-' + socket.gethostname())
 WORK = os.path.expanduser('~/.local/share/cuahang/f5')
 LOG = os.path.join(WORK, 'f5.log')
 POLL = 7
-VERSION = '2026-11-04'
+VERSION = '2026-11-15'
+# 15.11: tab Săn Makro – lần quét Makro (phiên Claude) chép data/san.json vào C:\CheckGia\san → máy này đẩy lên checkgia/sangia/
+SAN_DIR = os.path.expanduser(CFG.get('SAN_DIR', '/mnt/c/CheckGia/san'))
 os.makedirs(WORK, exist_ok=True)
 
 
@@ -251,6 +253,34 @@ def don_viec_do():
         bao(j, 'loi', 'Máy bị tắt hoặc chương trình khởi động lại giữa lúc chạy – lượt này bỏ, app giữ dữ liệu cũ. Anh bấm lại F5.')
 
 
+def dong_bo_san():
+    """san.json mới (mtime khác lần đẩy trước) → checkgia_cloud.day(..., bo='sangia'). Lỗi chỉ ghi log, không làm dừng worker."""
+    f = os.path.join(SAN_DIR, 'data', 'san.json')
+    if not os.path.exists(f): return
+    mt = str(int(os.path.getmtime(f))); dau = os.path.join(WORK, 'san_mtime')
+    if os.path.exists(dau) and open(dau).read().strip() == mt: return
+    try:
+        json.load(open(f))   # chép dở (đang ghi) → để lần sau
+    except Exception: return
+    try:
+        cc.day(SAN_DIR, 'Săn Makro ' + dt.datetime.now(PRAHA).strftime('%d.%m. %H:%M'), 'sangia')
+        open(dau, 'w').write(mt); log('Đã đẩy Săn Makro (san.json) lên cloud')
+    except (SystemExit, Exception) as e: log('Đẩy Săn Makro lỗi:', e)
+
+
+_KEO = [0]
+def tu_cap_nhat():
+    """30 phút 1 lần: git pull kho nhan; có code mới → thoát để f5_chay.sh chạy lại bằng bản mới (15.11)."""
+    if time.time() - _KEO[0] < 1800: return
+    _KEO[0] = time.time(); repo = os.path.dirname(TOOLS)
+    try:
+        cu = subprocess.run(['git', '-C', repo, 'rev-parse', 'HEAD'], capture_output=True, text=True, timeout=30).stdout.strip()
+        subprocess.run(['git', '-C', repo, 'pull', '-q', '--ff-only'], capture_output=True, text=True, timeout=120)
+        moi = subprocess.run(['git', '-C', repo, 'rev-parse', 'HEAD'], capture_output=True, text=True, timeout=30).stdout.strip()
+        if cu and moi and cu != moi: log(f'Có code mới ({cu[:7]} → {moi[:7]}) – chạy lại'); sys.exit(0)
+    except subprocess.SubprocessError as e: log('git pull lỗi:', e)
+
+
 def vong_lap():
     log(f'Bắt đầu nhận lệnh – máy "{MAY}", hỏi mỗi {POLL} s, giá nhập ở {GIA}')
     for lan in range(20):
@@ -260,6 +290,7 @@ def vong_lap():
     while True:
         try:
             if time.time() - nhip > 60:
+                dong_bo_san(); tu_cap_nhat()
                 rpc('may_nhip_tim', {'p_may': MAY, 'p_info': {'v': VERSION, 'viec': list(VIEC)}}); nhip = time.time()
             job = rpc('may_nhan_viec', {'p_may': MAY})
             loi_lien = 0
