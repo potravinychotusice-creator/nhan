@@ -4,7 +4,7 @@
 Tài khoản máy quét: ~/.config/cuahang/may.env (SB_EMAIL=..., SB_PASS=...), chmod 600. Không in mật khẩu.
 
   checkgia_cloud.py kiem                       # thử đăng nhập
-  checkgia_cloud.py day <thu_muc> [ghi_chu] [--bo letak]  # đẩy index.html, data/*.json (Check giá; --bo letak = So giá leták vào letak/)
+  checkgia_cloud.py day <thu_muc> [ghi_chu] [--bo letak|sangia]  # đẩy index.html, data/*.json (Check giá; --bo letak = So giá leták vào letak/)
                                                # --bo letak: XUẤT BẢN THEO PHIÊN BẢN (letak/v/<ver>/…, manifest đổi sau cùng)
   checkgia_cloud.py doc <bo> [chi_chua_xong]   # in JSON {id: data} của 1 bộ (report, views, ean, letak_list, status)
   checkgia_cloud.py ghi <bo> <id> <json|@file> # ghi 1 tài liệu (vd status f5 '{"state":"done",...}')
@@ -16,7 +16,8 @@ SB_URL = 'https://xgqblifqfgvicnxdddye.supabase.co'
 SB_KEY = 'sb_publishable_fDH0P14KjDq0D_2KXjS_oA_tjy-6jlf'
 BUCKET = 'checkgia'
 ENV = os.path.expanduser('~/.config/cuahang/may.env')
-BO = {'letak': ['index.html', 'data/ean.json', 'data/img.json', 'data/ncc_list.json']}   # bộ khác: thư mục con trong bucket
+BO = {'letak': ['index.html', 'data/ean.json', 'data/img.json', 'data/ncc_list.json'],
+      'sangia': ['data/san.json']}   # 15.11: tab Săn Makro (tools/san/xuat_san.py)   # bộ khác: thư mục con trong bucket
 FILES = ['index.html', 'data/cat.json', 'data/deals.json', 'data/dod_img.json',
          'data/letak.json', 'data/report_replies.json', 'data/akce_unikom.json']
 
