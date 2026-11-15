@@ -237,7 +237,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'cam'; b.textContent = '📷'; b.title = 'Quét mã bằng camera'; b.setAttribute('aria-label', 'Quét mã bằng camera');
       b.onclick = camTrucTiep; go.after(b);
       const q = document.getElementById('q'); if (q && matchMedia('(pointer:coarse)').matches) q.removeAttribute('autofocus'); // điện thoại: không tự bật bàn phím
-      xepGon(); tuTim(); mauB();
+      xepGon(); tuTim(); mauB(); if (window.__SAN) sanGiam();
       document.addEventListener('click', e => { const pc = e.target.closest && e.target.closest('.row .pc'); if (pc && !e.target.closest('a,button')) pc.classList.toggle('mo') });
       const st = document.getElementById('st');
       if (st) { const an = () => { st.hidden = /^Sẵn sàng/.test(st.textContent.trim()) }; new MutationObserver(an).observe(st, { childList: true, characterData: true, subtree: true }); an() }
@@ -306,6 +306,67 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       if (f) f.addEventListener('keydown', e => { if (e.key === 'Enter') dong() });
       new MutationObserver(capNhat).observe(ng, { subtree: true, attributes: true, attributeFilter: ['aria-pressed', 'hidden'], childList: true });
       capNhat();
+    }
+
+    // ---- 15.11 anh: tab Săn Makro thêm "Giảm bất ngờ" + "Giảm âm thầm" (so với giá thường của chính Makro) ----
+    // Dữ liệu: checkgia/sangia/data/san.json (tools/san/xuat_san.py, đẩy sau mỗi lần quét Makro). Chưa có → không hiện gì.
+    async function sanGiam() {
+      const KHO = 'cuahang-checkgia', PRE = 'sangia/';
+      const cache = await caches.open(KHO).catch(() => null);
+      const docMay = async k => { try { const r = cache && await cache.match('/_sg/' + k); return r ? await r.text() : null } catch (e) { return null } };
+      const luuMay = async (k, v) => { try { cache && await cache.put('/_sg/' + k, new Response(v)) } catch (e) {} };
+      const gunzip = async blob => await new Response(new Blob([new Uint8Array(await blob.arrayBuffer())]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      let man = null, S = null;
+      try {
+        const su = await sb.storage.from('checkgia').createSignedUrl(PRE + 'manifest.json', 60); if (su.error) throw su.error;
+        const r = await fetch(su.data.signedUrl + (su.data.signedUrl.includes('?') ? '&' : '?') + '_t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw 0;
+        man = JSON.parse(await r.text()); await luuMay('manifest.json', JSON.stringify(man));
+      } catch (e) { try { man = JSON.parse(await docMay('manifest.json') || 'null') } catch (_) {} }
+      const sha = man && man.files && man.files['data/san.json'] && man.files['data/san.json'].sha; if (!sha) return;
+      let v = await docMay('san@' + sha);
+      if (v == null) { try { const { data, error } = await sb.storage.from('checkgia').download(PRE + 'data/san.json.gz'); if (error) throw error; v = await gunzip(data); await luuMay('san@' + sha, v) } catch (e) { return } }
+      try { S = JSON.parse(v) } catch (e) { return }
+      const D = (S.drops || []).filter(a => !a.c_cheaper); if (!D.length) return;
+      const esc = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const fmt = n => n == null ? '' : Number(n).toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const dEnd = x => { const m = String(x || '').match(/(\d{4})-?(\d{2})-?(\d{2})/); return m ? (+m[3]) + '.' + (+m[2]) + '.' : '' };
+      const mkUrl = bb => bb && bb.length > 12 ? `https://distribuce.makro.cz/shop/pv/${bb.slice(0, -8)}/${bb.slice(-8, -4)}/${bb.slice(-4)}/x` : '';
+      const pct = a => Math.round((1 - (a.r_eff != null ? a.r_eff : a.ratio)) * 100);
+      const st = document.createElement('style');
+      st.textContent = '#sgm{background:#fff;border:1px solid var(--line,#e3e5e9);border-radius:12px;padding:10px;margin:8px 0}#sgm>summary{font-weight:700;font-size:1rem;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:8px}#sgm>summary small{font-weight:500;color:#5b6170;font-size:12px}'
+        + '#sgm .ch{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:8px 0}#sgm .ch button{flex:none;font:inherit;font-size:13px;border:0;background:#f1f2f4;color:#3b404b;border-radius:999px;padding:6px 12px;white-space:nowrap}#sgm .ch button[aria-pressed=true]{background:#16181d;color:#fff;font-weight:600}#sgm .ch small{margin-left:4px;opacity:.7}'
+        + '#sgm .lg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}@media (min-width:640px){#sgm .lg{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}'
+        + '#sgm .th2{background:#f7f8fa;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:4px;text-decoration:none;color:inherit;position:relative}'
+        + '#sgm .an{height:84px;border-radius:8px;background:#eceef1;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden}#sgm .an img{width:100%;height:100%;object-fit:contain;background:#fff}'
+        + '#sgm .tn{font-size:12.5px;font-weight:600;line-height:1.25;height:31px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}'
+        + '#sgm .gi{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}#sgm .gi b{font-size:16px;color:#0f6b3a}#sgm .gi s{font-size:11.5px;color:#5b6170}'
+        + '#sgm .du{display:flex;justify-content:space-between;align-items:center;gap:4px}#sgm .pt{background:#dcf3e5;color:#0b4d2a;border-radius:6px;padding:2px 6px;font-size:11.5px;font-weight:700}#sgm .gh{font-size:11px;color:#5b6170;text-align:right}'
+        + '#sgm .ss{font-size:11px;color:#0f6b3a;font-weight:600}#sgm .tg{position:absolute;top:11px;left:11px;display:flex;gap:4px}#sgm .tg i{font-style:normal;font-size:10px;font-weight:700;border-radius:5px;padding:1px 5px;background:#16181d;color:#fff}#sgm .tg i.s{background:#b45309}#sgm .tg i.a{background:#5b21b6}'
+        + '#sgm .them{display:block;margin:10px auto 0;font:inherit;padding:8px 16px;border:1px solid #e3e5e9;border-radius:10px;background:#fff}';
+      document.head.appendChild(st);
+      const box = document.createElement('details'); box.id = 'sgm'; box.open = true;
+      const t = S.stamp ? S.stamp.replace(/^\d{4}-(\d{2})-(\d{2}) /, (m, mo, d) => (+d) + '.' + (+mo) + '. ') : '';
+      box.innerHTML = '<summary><span>⚡ Makro vừa giảm giá</span><small>quét ' + esc(t) + ' · so với giá thường Makro</small></summary><div class="ch"></div><div class="lg"></div>';
+      const sec = document.querySelector('h2') && document.querySelector('h2').closest('section');
+      (sec || document.getElementById('list')).before(box);
+      const LOC = [['all', 'Tất cả'], ['moi', 'Giảm bất ngờ (mới)'], ['am', 'Giảm âm thầm'], ['sao', '★ Ưu tiên']];
+      const hop = (a, k) => k === 'all' || (k === 'moi' ? a.new || a.ns : k === 'am' ? a.silent : a.prio);
+      let k = 'all', n = 20; try { k = localStorage.getItem('sgm_loc') || 'all' } catch (e) {}
+      const the = a => { const u = mkUrl(a.bb), g = [a.silent ? 'âm thầm' : a.end && a.end < '2099' ? 'akce đến ' + dEnd(a.end) : '', a.st != null ? 'còn ' + a.st : ''].filter(Boolean).join(' · ');
+        return `<a class="th2" ${u ? `href="${u}" target="_blank" rel="noopener"` : ''}><div class="an">${a.img ? `<img loading="lazy" alt="" src="https://cdn.metro-group.com/cz/cz_pim_${esc(a.img)}.png?w=240&h=240&mode=pad&format=jpg" onerror="this.remove()">` : '🛒'}</div>`
+          + `<span class="tg">${a.new || a.ns ? '<i>MỚI</i>' : ''}${a.prio ? '<i class="s">★</i>' : ''}${a.silent ? '<i class="a">âm thầm</i>' : ''}</span>`
+          + `<div class="tn">${esc(a.n)}</div><div class="gi"><b>${fmt(a.m)}</b>${a.base ? `<s>${fmt(a.base)}</s>` : ''}</div>`
+          + `<div class="du"><span class="pt">−${pct(a)}%</span><span class="gh">${esc(g)}</span></div><div class="ss">${a.c_eq ? 'rẻ hơn ' + esc(a.c_src) + ' ' + fmt(a.c_eq) : ''}</div></a>` };
+      const ve = () => {
+        try { localStorage.setItem('sgm_loc', k) } catch (e) {}
+        const L = D.filter(a => hop(a, k));
+        box.querySelector('.ch').innerHTML = LOC.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${v === k}">${l}<small>${D.filter(a => hop(a, v)).length}</small></button>`).join('');
+        box.querySelector('.lg').innerHTML = L.slice(0, n).map(the).join('') + (L.length > n ? '' : '');
+        const old = box.querySelector('.them'); if (old) old.remove();
+        if (L.length > n) { const b = document.createElement('button'); b.type = 'button'; b.className = 'them'; b.textContent = 'Xem thêm ' + (L.length - n) + ' món'; b.onclick = () => { n += 40; ve() }; box.appendChild(b) }
+      };
+      box.querySelector('.ch').onclick = e => { const b = e.target.closest('button'); if (b) { k = b.dataset.v; n = 20; ve() } };
+      ve();
     }
 
     // ---- MẪU B (anh chọn 15.11): chỉ trên điện thoại ----
