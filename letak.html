@@ -110,7 +110,12 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
       + '.list{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:8px!important;align-items:stretch}'
       + '.list>:not(.row){grid-column:1/-1}.row{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)!important;height:100%;box-sizing:border-box;align-content:start}.row .name{grid-column:1/-1}'
       + '.bar,.loc-hang{max-width:none}}'
-      + '@media (min-width:1500px){.list{grid-template-columns:repeat(3,minmax(0,1fr))}}';
+      + '@media (min-width:1500px){.list{grid-template-columns:repeat(3,minmax(0,1fr))}}'
+      // 16.11 anh: điện thoại tràn màn hình – bỏ lề 2 bên, bớt khoảng trống trên cùng, thẻ sát mép
+      + '@media (max-width:760px){.wrap{padding:4px 0 110px!important;gap:8px!important;max-width:none!important}'
+      + '.wrap>*{padding-left:10px;padding-right:10px;box-sizing:border-box}.wrap>.list,.wrap>section:has(.list){padding-left:0!important;padding-right:0!important}'
+      + '.list{gap:6px!important}.row{border-radius:0!important;border-right:0!important;border-top:0!important;margin:0!important;padding:10px!important;box-shadow:none!important}'
+      + '.wrap h2,.wrap h3,.hhan,.han-h{font-size:15px!important;line-height:1.3!important}}';
     const so = t => { const m = String(t || '').replace(/\s/g, '').match(/(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN };
     const gonThe = r => {
       if (r.dataset.gon) return; r.dataset.gon = 1;
