@@ -91,12 +91,12 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
 .wrap{max-width:none}
 .lay{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
 .main{display:flex;flex-direction:column;gap:10px;min-width:0}
-.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px}
 .list>.grp,.list>.hint,.list>.empty{grid-column:1/-1;margin:6px 0 0}
 .tk{container-type:inline-size;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative}
 .tk.picked{outline:2px solid var(--good);outline-offset:-1px}
 .tk.chk{border-color:var(--chk)}
-.tk .ph{height:132px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;position:relative;border-bottom:1px solid var(--line)}
+.tk .ph{height:120px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;position:relative;border-bottom:1px solid var(--line)}
 .tk .ph img{max-width:100%;max-height:100%;object-fit:contain}.tk .ph .no{font-size:40px;opacity:.4}
 .tk .bdg{position:absolute;top:7px;left:7px;right:7px;display:flex;flex-wrap:wrap;gap:4px}
 .tk .bdg span{font:700 11.5px/1.5 var(--body);padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--bg)}
@@ -119,7 +119,7 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
 .tk .pk:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .tk .lk{flex:none;min-height:38px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-radius:10px;color:var(--info);text-decoration:none;font-size:.82rem;font-weight:600}
 @media (min-width:1000px){
- .lay{grid-template-columns:230px minmax(0,1fr)}
+ .lay{grid-template-columns:210px minmax(0,1fr)}
  .bar{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px;gap:12px;transform:none!important}
  .bar .line{flex-direction:column;align-items:stretch;gap:12px}
  .bar .seg{flex-direction:column;flex-wrap:nowrap;overflow:visible;gap:2px}
@@ -132,13 +132,13 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
  .bar .line:last-child{order:-1}
 }
 @media (min-width:1400px){
- .lay{grid-template-columns:230px minmax(0,1fr) 340px}
+ .lay{grid-template-columns:210px minmax(0,1fr) 320px}
  .shop{display:flex!important;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
  .shop #closeShop,#openShop{display:none}
 }
 @media (max-width:759px){.list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tk .ph{height:112px}.tk .in{padding:7px 8px 9px}}
 @media (max-width:340px){.list{grid-template-columns:minmax(0,1fr)}}
-@container (max-width:185px){.tk .ac{flex-wrap:wrap}.tk .ac>*{flex:1 1 100%;justify-content:center}.tk .gia b{font-size:1.25rem}}
+@container (max-width:165px){.tk .ac{flex-wrap:wrap}.tk .ac>*{flex:1 1 100%;justify-content:center}.tk .gia b{font-size:1.25rem}}
 </style><style id="xnavcss">.xnav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px;font:500 13px system-ui,sans-serif;border-bottom:1px solid rgba(127,127,127,.25)}.xnav a{padding:4px 10px;border-radius:999px;text-decoration:none;color:inherit;border:1px solid rgba(127,127,127,.35)}.xnav a.on{background:#0f6b4f;color:#fff;border-color:#0f6b4f}</style>
 <div class="wrap">
 <nav class="xnav" id="xnav"><a href="https://claude.ai/artifact/DzWTp6yUKmPQR6UmFJQvV2" target="_blank" rel="noopener" class=on>So giá leták</a><a href="https://claude.ai/artifact/9AcLvvsnur5RUJvgr8TL6s" target="_blank" rel="noopener">Săn giá Makro</a><a href="https://claude.ai/artifact/BED1NqBcXFGoDbWn21kHnk" target="_blank" rel="noopener">Check giá ở nhiều nơi</a></nav><header>

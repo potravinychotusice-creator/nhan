@@ -106,7 +106,10 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     document.head.appendChild(st);
     // thẻ hàng gọn (4.11 anh: "tóm gọn thông tin, đừng sổ xuống mất diện tích"):
     // tên → [giá siêu thị | nơi nhập rẻ nhất] → 1 dòng hạn nhỏ; chi tiết nơi nhập chỉ hiện khi chạm vào ô đó
-    st.textContent += '.row{padding:22px 10px 8px!important;gap:2px 10px!important}.row .lab{font-size:10px!important}.row .cell .p{font-size:16px!important}'
+    // 19.11 anh: trang leták mới (thẻ e-shop, .lay) tự dàn hết màn hình → không dùng CSS thẻ cũ ở dưới
+    const MOI = !!document.querySelector('.lay');
+    if (MOI) st.textContent += '.wrap{max-width:none!important}@media (max-width:760px){.wrap{padding:4px 10px 110px!important;gap:8px!important}}';
+    if (!MOI) st.textContent += '.row{padding:22px 10px 8px!important;gap:2px 10px!important}.row .lab{font-size:10px!important}.row .cell .p{font-size:16px!important}'
       + '.row .cell .m{font-size:11.5px!important;line-height:1.3}.row .chips{margin-top:2px!important}.row .pill{font-size:10.5px!important;padding:0 6px!important}'
       + '.row .name .sub{font-size:11.5px}.row .th{flex-basis:40px!important;width:40px!important;height:40px!important}'
       + '.row .cell.han{grid-column:1/-1;order:9;display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline}.row .cell.han .m{display:inline}'
@@ -177,7 +180,8 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     const f5st = $('#f5st');
     // bộ lọc: các hàng chip vào 1 khung thả xuống, mở bằng nút ở góc cạnh ô tìm
     const bar = $('.bar'), q = $('#q');
-    if (bar && q) {
+    // máy tính (trang mới): bộ lọc nằm sẵn ở cột trái, không gập vào nút
+    if (bar && q && !(MOI && innerWidth >= 1000)) {
       const lines = [...bar.querySelectorAll(':scope > .line')].filter(l => !l.contains(q));
       const ds = document.createElement('div'); ds.className = 'loc-ds'; lines.forEach(l => ds.appendChild(l));
       if (f5st) { const tt = document.createElement('div'); tt.className = 'loc-tt'; tt.appendChild(f5st); ds.prepend(tt); f5st.classList.add('mo') }
