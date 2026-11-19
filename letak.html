@@ -73,6 +73,8 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   // 3. Mở trang: chèn lớp thay thế (db/fetch) trước code của trang
   let html = F['index.html'] || '';
   html = html.replace(/<script src="voice\.js"[^>]*><\/script>/, '');
+  // 19.11 anh: cùng sản phẩm, cùng siêu thị → chỉ 1 dòng giá thấp nhất. Trang cũ trên cloud chưa có gopAkce → chèn vào trước khi dựng danh sách.
+  if (!html.includes('gopAkce')) html = html.replace('const rows=DATA.D.map(', () => 'DATA.D=(' + gopAkce.toString() + ')(DATA.D);const rows=DATA.D.map(');
   const css = '<style>#xnav{display:none!important}</style>';
   const head = '<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
     + '<script>(' + lop.toString() + ')()<\/script>' + css;
@@ -81,6 +83,15 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
   html = a >= 0 ? head + html.slice(a, b + 8) + '</head><body>' + html.slice(b + 8) + sauCung + '</body></html>' : head + '</head><body>' + html + sauCung + '</body></html>';
   document.open(); document.write(html); document.close();
 
+
+  // cùng sản phẩm (prod Kupi hoặc tên) + cùng siêu thị + cùng cỡ → giữ giá thấp nhất (tính cả giá thẻ/điều kiện); hoà giá: đang chạy > có giá nhập > rẻ nhất
+  function gopAkce(D) {
+    const nz = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, '');
+    const rk = r => [+r[5] || 1e9, r[11] ? 1 : 0, r[18] ? 0 : 1, r[20] ? 0 : 1];
+    const lt = (a, b) => { const x = rk(a), y = rk(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] < y[i]; return false };
+    const lan = (L, key) => { const G = new Map(); L.forEach((r, i) => { const k = key(r), c = G.get(k); if (!c || lt(r, c.r)) G.set(k, { r, i: c ? c.i : i }) }); return [...G.values()].sort((a, b) => a.i - b.i).map(x => x.r) };
+    return lan(lan(D, r => r[0] + '|' + nz(r[22] || r[3]) + '|' + nz(r[4])), r => r[0] + '|' + nz(r[3]) + '|' + nz(r[4]));
+  }
 
   // ---- 4.11 anh: dòng trạng thái nhỏ, bộ lọc gọn vào 1 nút ở góc, xuất PNG mỗi siêu thị 1 ảnh ----
   function gon() {

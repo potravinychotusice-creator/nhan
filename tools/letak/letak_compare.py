@@ -356,6 +356,22 @@ for k, L_ in grp.items():
         if others:
             ob = min(others, key=lambda b: b['pu']); a['oth'] = [ob['chain'], round(ob['pu'] * a['q'] * a['c'], 2)]
 
+# 19.11 anh: CÙNG sản phẩm, CÙNG siêu thị (vd Máslo Milko Kaufland 24,90 thẻ XTRA + 29,90; Lindor 2 dòng) → chỉ giữ 1 dòng,
+# giá thấp nhất (tính cả giá thẻ / giới hạn ks / mọi điều kiện). Hoà giá: ưu tiên akce đang chạy, có ghép giá nhập, rẻ nhất siêu thị.
+# Khoá: siêu thị + sản phẩm Kupi (prod) + cỡ; thêm 1 lượt theo tên + cỡ (Kupi đôi khi 2 prod cho cùng 1 món).
+def _gop(L_, key):
+    G = {}
+    for i, a in enumerate(L_):
+        k = key(a); rk = (a['p'] or 1e9, 1 if a['fut'] else 0, 0 if a.get('best') else 1, 0 if a.get('cheapest') else 1)
+        c = G.get(k)
+        if not c or rk < c[0]: G[k] = (rk, c[1] if c else i, a)
+    return [x[2] for x in sorted(G.values(), key=lambda x: x[1])]
+_cz = lambda s: re.sub(r'\s+', '', na(str(s or '')))
+_n0 = len(rows)
+rows = _gop(rows, lambda a: (a['chain'], a['prod'] or _cz(a['n']), _cz(a['amt'])))
+rows = _gop(rows, lambda a: (a['chain'], _cz(a['n']), _cz(a['amt'])))
+print('gộp trùng (cùng món, cùng siêu thị → giá thấp nhất):', _n0, '→', len(rows))
+
 def st(a):
     if not a.get('best'): return 'none'
     if a['diff'] <= -55: return 'chk'      # rẻ hơn > 55 %: nghi ghép sai hàng / sai quy cách → anh kiểm tra lại, không tính là 'giá đẹp'

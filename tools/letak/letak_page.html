@@ -128,6 +128,12 @@ const $=s=>document.querySelector(s);
 const dd=s=>{if(!s)return'';const[y,m,d]=s.split('-');return +d+'.'+ +m+'.'};
 const M=DATA.meta;
 const F=['chain','g','cat','n','amt','p','pct','unit','the','d0','d1','fut','lim','cond','note','lk','st','diff','best','sup','cheap','oth','prod','did','inv'];
+// 19.11 anh: cùng sản phẩm, cùng siêu thị → chỉ 1 dòng, giá thấp nhất (tính cả giá thẻ/điều kiện); hoà giá: đang chạy > có giá nhập > rẻ nhất
+function gopAkce(D){const nz=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'');
+  const rk=r=>[+r[5]||1e9,r[11]?1:0,r[18]?0:1,r[20]?0:1];const lt=(a,b)=>{const x=rk(a),y=rk(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]<y[i];return false};
+  const lan=(L,key)=>{const G=new Map();L.forEach((r,i)=>{const k=key(r),c=G.get(k);if(!c||lt(r,c.r))G.set(k,{r,i:c?c.i:i})});return[...G.values()].sort((a,b)=>a.i-b.i).map(x=>x.r)};
+  return lan(lan(D,r=>r[0]+'|'+nz(r[22]||r[3])+'|'+nz(r[4])),r=>r[0]+'|'+nz(r[3])+'|'+nz(r[4]))}
+DATA.D=gopAkce(DATA.D);
 const rows=DATA.D.map(a=>{const o={};F.forEach((k,i)=>o[k]=a[i]);if(o.d0)o.fut=o.d0>today?1:0;o.good=o.st==='buy'||o.cheap;return o});
 const CH=['Kaufland','Lidl','Penny','Albert','Billa','Tesco','Globus'];
 // hạn chính của leták mỗi chuỗi = ngày kết thúc gặp nhiều nhất (trong các món đang chạy); món kết thúc sớm hơn = akce ngắn ngày
