@@ -97,6 +97,12 @@ for r in (L('bidfood.json', []) or []):
     else:
         if re.search(r'\bcca\b|váh', nm, re.I): continue
         u, q, c = piece(nm); sup.append(dict(src='Bidfood', n=nm, p=r['pv'], u=u, q=q, c=c, akce=akce, id=r['id']))
+# 19.11.2026 CÒN HÀNG (ton_kho.json từ ~/checkgia/ton_kho.py, máy cửa hàng ghi mỗi sáng): món NCC báo hết hàng KHÔNG đem so
+_TK = L('ton_kho.json', {}) or {}
+def _het(x):
+    k = {'Makro': 'Makro|%s' % x.get('bb'), 'JIP': 'JIP|' + x['n'], 'Tamda': 'Tamda|' + x['n'], 'Bidfood': 'Bidfood|%s' % x.get('id')}.get(x['src'])
+    return k in _TK
+_n0 = len(sup); sup = [x for x in sup if not _het(x)]; print('bỏ hàng hết:', _n0 - len(sup))
 # Unikom (CeposOS ceník, đọc màn hình – thêm 24.10.2026): unikom.json = [mã, tên, EAN, giá bez DPH, giá s DPH, mã akce]
 for r in (L('unikom.json', []) or []):
     if not r[1] or not r[4] or BAD.search(r[1]): continue

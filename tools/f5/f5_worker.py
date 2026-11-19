@@ -166,7 +166,7 @@ def viec_letak(job):
     bao(job, 'dang_chay', f'Kupi {len(rows)} akce. Đang so với giá nhập…')
     thieu = []
     for f, g in (('mk.json', 'mk.json'), ('jip.json', 'jip.json'), ('tamda.json', 'tamda.json'), ('bidfood.json', 'bidfood.json'),
-                 ('unikom.json', 'unikom.json'), ('unikom_cenik.json', 'unikom.json'), ('inv_rows.json', 'inv_rows.json'), ('dates.json', 'dates.json')):
+                 ('unikom.json', 'unikom.json'), ('unikom_cenik.json', 'unikom.json'), ('inv_rows.json', 'inv_rows.json'), ('dates.json', 'dates.json'), ('ton_kho.json', 'ton_kho.json')):   # 19.11: ton_kho = món NCC báo hết hàng
         p = os.path.join(GIA, f)
         if os.path.exists(p): shutil.copy(p, os.path.join(MOI, g))
     for g in ('mk.json', 'jip.json', 'tamda.json'):
