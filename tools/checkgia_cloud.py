@@ -19,7 +19,7 @@ ENV = os.path.expanduser('~/.config/cuahang/may.env')
 BO = {'letak': ['index.html', 'data/ean.json', 'data/img.json', 'data/ncc_list.json'],
       'sangia': ['data/san.json']}   # 15.11: Giảm bất ngờ / âm thầm cho tab Săn Makro (tools/san/xuat_san.py)   # bộ khác: thư mục con trong bucket
 FILES = ['index.html', 'data/cat.json', 'data/deals.json', 'data/dod_img.json',
-         'data/letak.json', 'data/report_replies.json', 'data/akce_unikom.json']
+         'data/letak.json', 'data/report_replies.json', 'data/akce_unikom.json', 'data/goiy.json']
 
 
 def req(method, path, body=None, headers=None, token=None, timeout=300):
