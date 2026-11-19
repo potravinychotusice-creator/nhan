@@ -374,8 +374,9 @@ def _gop(L_, key):
     return [x[2] for x in sorted(G.values(), key=lambda x: x[1])]
 _cz = lambda s: re.sub(r'\s+', '', na(str(s or '')))
 _n0 = len(rows)
-rows = _gop(rows, lambda a: (a['chain'], a['prod'] or _cz(a['n']), _cz(a['amt'])))
-rows = _gop(rows, lambda a: (a['chain'], _cz(a['n']), _cz(a['amt'])))
+# 19.11 (Codex soát): akce đang chạy và akce tuần sau KHÔNG gộp với nhau (trước: tuần sau rẻ hơn → mất dòng đang chạy)
+rows = _gop(rows, lambda a: (a['chain'], a['prod'] or _cz(a['n']), _cz(a['amt']), bool(a['fut'])))
+rows = _gop(rows, lambda a: (a['chain'], _cz(a['n']), _cz(a['amt']), bool(a['fut'])))
 print('gộp trùng (cùng món, cùng siêu thị → giá thấp nhất):', _n0, '→', len(rows))
 
 def st(a):

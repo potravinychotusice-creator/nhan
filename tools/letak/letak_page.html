@@ -177,7 +177,7 @@ const F=['chain','g','cat','n','amt','p','pct','unit','the','d0','d1','fut','lim
 function gopAkce(D){const nz=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'');
   const rk=r=>[+r[5]||1e9,r[11]?1:0,r[18]?0:1,r[20]?0:1];const lt=(a,b)=>{const x=rk(a),y=rk(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]<y[i];return false};
   const lan=(L,key)=>{const G=new Map();L.forEach((r,i)=>{const k=key(r),c=G.get(k);if(!c||lt(r,c.r))G.set(k,{r,i:c?c.i:i})});return[...G.values()].sort((a,b)=>a.i-b.i).map(x=>x.r)};
-  return lan(lan(D,r=>r[0]+'|'+nz(r[22]||r[3])+'|'+nz(r[4])),r=>r[0]+'|'+nz(r[3])+'|'+nz(r[4]))}
+  return lan(lan(D,r=>r[0]+'|'+nz(r[22]||r[3])+'|'+nz(r[4])+'|'+(r[11]?1:0)),r=>r[0]+'|'+nz(r[3])+'|'+nz(r[4])+'|'+(r[11]?1:0))}
 DATA.D=gopAkce(DATA.D);
 const rows=DATA.D.map(a=>{const o={};F.forEach((k,i)=>o[k]=a[i]);if(o.d0)o.fut=o.d0>today?1:0;o.good=o.st==='buy'||o.cheap;return o});
 const CH=['Kaufland','Lidl','Penny','Albert','Billa','Tesco','Globus'];
@@ -288,13 +288,13 @@ function card(r){const K=nK(r);
   const sup=r.sup?Object.entries(r.sup).map(([s,v])=>`${s} ${fmt(v[0])}${v[2]?' (akce)':''}`).join(' · '):'';
   const pk=PICK[r.did],slug=(r.prod||'').split('/').pop(),big=IMGU[slug];
   // 19.11 anh: thẻ kiểu e-shop – ảnh to, nhãn trên ảnh, giá to, nơi nhập rẻ nhất, nút Lấy
-  const bd=[`<span>${r.chain}</span>`];if(r.pct)bd.push(`<span class="pc">−${r.pct} %</span>`);
+  const bd=[`<span>${esc(r.chain)}</span>`];if(r.pct)bd.push(`<span class="pc">−${r.pct} %</span>`);
   if(r.fut)bd.push(`<span class="fut">Từ ${dd(r.d0)}</span>`);else if(r.short)bd.push(`<span class="end">⚠️ đến ${wd(r.d1)}</span>`);else if(r.d1&&daysTo(r.d1)<=1)bd.push(`<span class="end">Hết ${daysTo(r.d1)<=0?'hôm nay':'mai'}</span>`);
   const ph=big?`<img alt="" loading="lazy" src="https://img.kupi.cz/kupi/thumbs/${esc(big)}" onerror="this.outerHTML='<span class=no>🛒</span>'">`:`<span class="th" data-s="${esc(slug)}">${thumb(r)}</span>`;
   const st=r.st==='buy'?`<span class="pt">rẻ hơn giá nhập ${Math.abs(r.diff).toFixed(0)} %</span>`:r.st==='even'?`<span class="pt even">ngang giá nhập</span>`:r.st==='chk'?`<span class="pt chk">nghi ghép sai – kiểm tra</span>`:r.best&&r.diff!=null?`<span class="pt no">đắt hơn giá nhập ${Math.abs(r.diff).toFixed(0)} %</span>`:'';
-  const ss=r.best?`<div class="ss">Nhập rẻ nhất: <b>${r.best.src}</b> ${fmt(r.best.eq)}${K?` (= ${fmt(r.best.eq/K)}/ks)`:''} ${st}<span class="nm" title="${esc(r.best.n)}${sup?' · '+esc(sup):''}">${r.best.x?'khác hãng · ':''}${esc(r.best.n)}</span></div>`:'<div class="ss"><span class="pt no">không có hàng nhập tương đương</span></div>';
-  const ex=[];if(r.cheap)ex.push(`<span class="pill buy">Rẻ nhất giữa siêu thị</span>`);if(isOld(r)&&NEWD[r.chain]&&!r.fut)ex.push(`<span class="pill" title="Leták mới của ${r.chain} từ ${dd(NEWD[r.chain])}">Leták cũ</span>`);
-  if(r.inv)ex.push(r.p<=r.inv[2]*0.97?`<span class="pill buy" title="Anh đã nhập: ${r.inv[0]} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]})">Rẻ hơn hàng đang nhập ${Math.round((1-r.p/r.inv[2])*100)}%</span>`:`<span class="pill" title="Anh đã nhập: ${r.inv[0]} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]})">Hàng đang nhập · ${r.inv[0]} ${fmt(r.inv[2])}</span>`);
+  const ss=r.best?`<div class="ss">Nhập rẻ nhất: <b>${esc(r.best.src)}</b> ${fmt(r.best.eq)}${K?` (= ${fmt(r.best.eq/K)}/ks)`:''} ${st}<span class="nm" title="${esc(r.best.n)}${sup?' · '+esc(sup):''}">${r.best.x?'khác hãng · ':''}${esc(r.best.n)}</span></div>`:'<div class="ss"><span class="pt no">không có hàng nhập tương đương</span></div>';
+  const ex=[];if(r.cheap)ex.push(`<span class="pill buy">Rẻ nhất giữa siêu thị</span>`);if(isOld(r)&&NEWD[r.chain]&&!r.fut)ex.push(`<span class="pill" title="Leták mới của ${esc(r.chain)} từ ${dd(NEWD[r.chain])}">Leták cũ</span>`);
+  if(r.inv)ex.push(r.p<=r.inv[2]*0.97?`<span class="pill buy" title="Anh đã nhập: ${esc(r.inv[0])} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]})">Rẻ hơn hàng đang nhập ${Math.round((1-r.p/r.inv[2])*100)}%</span>`:`<span class="pill" title="Anh đã nhập: ${esc(r.inv[0])} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]})">Hàng đang nhập · ${esc(r.inv[0])} ${fmt(r.inv[2])}</span>`);
   if(r.st==='sup'&&r.best&&!r.best.x)ex.push(`<span class="pill fut">Ứng viên akce riêng</span>`);
   const old=r.pct&&r.p?r.p/(1-r.pct/100):null;
   return `<article class="tk ${r.st}${pk?' picked':''}">
@@ -307,7 +307,7 @@ function card(r){const K=nK(r);
   <div class="han${r.short||(!r.fut&&r.d1&&daysTo(r.d1)<=1)?' w':''}" title="${esc(r.cond||'')}">${win(r)}${r.lim?' · <b>'+esc(r.lim)+'</b>':''}${r.cond?' · '+esc(r.cond):''}</div>
   ${ss}
   ${ex.length?`<div class="chips">${ex.join('')}</div>`:''}
-  <div class="ac"><label class="pick pk" title="Chọn để đi lấy"><input type="checkbox" data-did="${r.did}" ${pk?'checked':''}><span>${pk===2?'✓ Đã lấy':pk?'✓ Đã chọn':'＋ Lấy'}</span></label>${r.lk?`<a class="lk" href="https://www.kupi.cz${r.lk}" target="_blank" rel="noopener" title="Xem trong leták">Leták ↗</a>`:''}</div>
+  <div class="ac"><label class="pick pk" title="Chọn để đi lấy"><input type="checkbox" data-did="${r.did}" ${pk?'checked':''}><span>${pk===2?'✓ Đã lấy':pk?'✓ Đã chọn':'＋ Lấy'}</span></label>${r.lk&&/^\/[\w\-\/?=&%.#]*$/.test(r.lk)?`<a class="lk" href="https://www.kupi.cz${esc(r.lk)}" target="_blank" rel="noopener" title="Xem trong leták">Leták ↗</a>`:''}</div>
   </div>
 </article>`}
 const IMGU=(()=>{try{return __IMGU__}catch(e){return {}}})();

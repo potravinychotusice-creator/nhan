@@ -90,7 +90,7 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     const rk = r => [+r[5] || 1e9, r[11] ? 1 : 0, r[18] ? 0 : 1, r[20] ? 0 : 1];
     const lt = (a, b) => { const x = rk(a), y = rk(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] < y[i]; return false };
     const lan = (L, key) => { const G = new Map(); L.forEach((r, i) => { const k = key(r), c = G.get(k); if (!c || lt(r, c.r)) G.set(k, { r, i: c ? c.i : i }) }); return [...G.values()].sort((a, b) => a.i - b.i).map(x => x.r) };
-    return lan(lan(D, r => r[0] + '|' + nz(r[22] || r[3]) + '|' + nz(r[4])), r => r[0] + '|' + nz(r[3]) + '|' + nz(r[4]));
+    return lan(lan(D, r => r[0] + '|' + nz(r[22] || r[3]) + '|' + nz(r[4]) + '|' + (r[11] ? 1 : 0)), r => r[0] + '|' + nz(r[3]) + '|' + nz(r[4]) + '|' + (r[11] ? 1 : 0));
   }
 
   // ---- 4.11 anh: dòng trạng thái nhỏ, bộ lọc gọn vào 1 nút ở góc, xuất PNG mỗi siêu thị 1 ảnh ----
