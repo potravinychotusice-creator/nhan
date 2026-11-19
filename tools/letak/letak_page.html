@@ -91,7 +91,7 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
 .wrap{max-width:none}
 .lay{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
 .main{display:flex;flex-direction:column;gap:10px;min-width:0}
-.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
 .list>.grp,.list>.hint,.list>.empty{grid-column:1/-1;margin:6px 0 0}
 .tk{container-type:inline-size;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative}
 .tk.picked{outline:2px solid var(--good);outline-offset:-1px}
@@ -118,22 +118,12 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
 .tk.picked .pk{background:var(--good-bg);color:var(--good);box-shadow:inset 0 0 0 1.5px var(--good)}
 .tk .pk:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .tk .lk{flex:none;min-height:38px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-radius:10px;color:var(--info);text-decoration:none;font-size:.82rem;font-weight:600}
-@media (min-width:1000px){
- .lay{grid-template-columns:210px minmax(0,1fr)}
- .bar{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px;gap:12px;transform:none!important}
- .bar .line{flex-direction:column;align-items:stretch;gap:12px}
- .bar .seg{flex-direction:column;flex-wrap:nowrap;overflow:visible;gap:2px}
- .bar .seg::before{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:2px 4px 4px}
- #chain::before{content:"Siêu thị"}#day::before{content:"Ngày"}#grp::before{content:"Nhóm"}#mode::before{content:"Xem"}#sort::before{content:"Sắp xếp"}
- .bar .seg button{border:0;background:none;border-radius:8px;text-align:left;display:flex;justify-content:space-between;gap:6px;white-space:normal;padding:6px 8px}
- .bar .seg button:hover{background:var(--neutral-bg)}
- .bar .seg button[aria-pressed="true"]{background:var(--good-bg);color:var(--good);font-weight:700}
- .bar input{flex:none}
- .bar .line:last-child{order:-1}
-}
+/* 19.11 anh: bố cục như Akce Unikom (chuẩn) – tìm + lọc trên cùng, thẻ chạy liền, list đi lấy bên phải */
+.bar{grid-column:1/-1}.bar .loc-hang{order:-1}
+@media (min-width:1000px){.bar .seg{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}}
 @media (min-width:1400px){
- .lay{grid-template-columns:210px minmax(0,1fr) 320px}
- .shop{display:flex!important;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
+ .lay{grid-template-columns:minmax(0,1fr) 320px}
+ .shop{display:flex!important;position:sticky;top:96px;max-height:calc(100vh - 110px);overflow:auto}
  .shop #closeShop,#openShop{display:none}
 }
 @media (max-width:759px){.list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tk .ph{height:112px}.tk .in{padding:7px 8px 9px}}
@@ -269,7 +259,7 @@ function render(){
   else if(S.sort==='dep')L.sort((x,y)=>dk(x)-dk(y)||(y.cheap?1:0)-(x.cheap?1:0)||(y.pct??0)-(x.pct??0));
   else if(S.sort==='letak')L.sort((x,y)=>CH.indexOf(x.chain)-CH.indexOf(y.chain)||(x.fut?1:0)-(y.fut?1:0)||lkPage(x)-lkPage(y)||x.n.localeCompare(y.n));
   else L.sort((x,y)=>key(x).localeCompare(key(y))||(x.diff??99)-(y.diff??99)||(y.pct??0)-(x.pct??0));
-  const gk=S.sort==='han'?key:S.sort==='letak'?(r=>r.chain+(r.fut?' · sắp có':'')):null;
+  const gk=S.sort==='han'?null:S.sort==='letak'?(r=>r.chain+(r.fut?' · sắp có':'')):null;
   let last='',html=eanNote;
   L.slice(0,shown).forEach(r=>{if(gk){const k=gk(r);if(k!==last){last=k;const n=L.filter(x=>gk(x)===k).length;
     if(S.sort==='letak')html+=`<h2 class="grp">${esc(k)} <small>${n} món · theo trang leták</small></h2>`;

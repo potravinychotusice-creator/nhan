@@ -180,9 +180,9 @@ button{font:inherit;min-height:50px;padding:0 22px;border:0;border-radius:12px;b
     const f5st = $('#f5st');
     // bộ lọc: các hàng chip vào 1 khung thả xuống, mở bằng nút ở góc cạnh ô tìm
     const bar = $('.bar'), q = $('#q');
-    // máy tính (trang mới): bộ lọc nằm sẵn ở cột trái, không gập vào nút
-    if (bar && q && !(MOI && innerWidth >= 1000)) {
-      const lines = [...bar.querySelectorAll(':scope > .line')].filter(l => !l.contains(q));
+    // trang mới, máy tính: hàng siêu thị để ngoài (như chip leták bên Akce Unikom), còn lại gập vào ⚙
+    if (bar && q) {
+      const lines = [...bar.querySelectorAll(':scope > .line')].filter(l => !l.contains(q) && !(MOI && innerWidth >= 1000 && l.querySelector('#chain')));
       const ds = document.createElement('div'); ds.className = 'loc-ds'; lines.forEach(l => ds.appendChild(l));
       if (f5st) { const tt = document.createElement('div'); tt.className = 'loc-tt'; tt.appendChild(f5st); ds.prepend(tt); f5st.classList.add('mo') }
       const hang = q.closest('.line'); hang.classList.add('loc-hang');
