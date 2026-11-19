@@ -86,6 +86,59 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
 .bar{transition:transform .25s ease}.bar.hid{transform:translateY(calc(-100% - 12px))}/* 26.10 anh: vuốt xuống thì menu ẩn hẳn, vuốt lên thì hiện lại */
 @media(max-width:700px){.bar{gap:4px;padding-block:6px}.bar .seg button{padding:4px 10px;font-size:13px}#q{padding:6px 10px}}
 .f5{margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px}.bar .seg{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}.bar .seg button{white-space:nowrap;flex:none}.f5 button{font:600 13px system-ui,sans-serif;padding:5px 12px;border-radius:999px;border:1px solid #0f6b4f;background:#0f6b4f;color:#fff;cursor:pointer}.f5 button:disabled{opacity:.6}
+
+/* 19.11 anh: làm lại kiểu e-shop như tab Gợi ý đặt hàng – dàn hết chiều ngang, lưới thẻ có ảnh to, lọc bên trái, list đi lấy bên phải */
+.wrap{max-width:none}
+.lay{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+.main{display:flex;flex-direction:column;gap:10px;min-width:0}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.list>.grp,.list>.hint,.list>.empty{grid-column:1/-1;margin:6px 0 0}
+.tk{container-type:inline-size;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative}
+.tk.picked{outline:2px solid var(--good);outline-offset:-1px}
+.tk.chk{border-color:var(--chk)}
+.tk .ph{height:132px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;position:relative;border-bottom:1px solid var(--line)}
+.tk .ph img{max-width:100%;max-height:100%;object-fit:contain}.tk .ph .no{font-size:40px;opacity:.4}
+.tk .bdg{position:absolute;top:7px;left:7px;right:7px;display:flex;flex-wrap:wrap;gap:4px}
+.tk .bdg span{font:700 11.5px/1.5 var(--body);padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--bg)}
+.tk .bdg .pc{background:var(--accent);color:#fff}.tk .bdg .fut{background:var(--info-bg);color:var(--info)}.tk .bdg .end{background:var(--warn-bg);color:var(--warn)}
+.tk .in{padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.tk .tn{font-weight:600;line-height:1.3;font-size:.9rem;margin:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tk .sub{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk .gia{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:2px}
+.tk .gia b{font:700 1.45rem/1.1 var(--body);letter-spacing:-.01em;color:var(--accent)}.tk .gia b small{font-size:.8rem}.tk .gia s{color:var(--muted);font-size:.86rem}
+.tk .dv{font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tk .dv b{color:var(--fg)}
+.tk .han{font-size:.78rem;color:var(--muted)}.tk .han.w{color:var(--accent);font-weight:600}
+.tk .ss{font-size:.8rem;line-height:1.35}.tk .ss b{color:var(--good)}.tk .ss .pt{background:var(--good-bg);color:var(--good);font-weight:700;border-radius:6px;padding:0 6px;white-space:nowrap}
+.tk .ss .pt.even{background:var(--warn-bg);color:var(--warn)}.tk .ss .pt.chk{background:var(--chk-bg);color:var(--chk)}.tk .ss .pt.no{background:var(--neutral-bg);color:var(--muted);white-space:normal}
+.tk .ss .nm{display:block;color:var(--muted);font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tk .chips{margin-top:0}
+.tk .ac{margin-top:auto;display:flex;gap:6px;align-items:center;padding-top:6px}
+.tk .pk{flex:1 1 0;min-width:0;min-height:38px;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--good);color:#fff;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;position:static;padding:0 8px}
+.tk .pk input{position:absolute;opacity:0;width:1px;height:1px}
+.tk.picked .pk{background:var(--good-bg);color:var(--good);box-shadow:inset 0 0 0 1.5px var(--good)}
+.tk .pk:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.tk .lk{flex:none;min-height:38px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-radius:10px;color:var(--info);text-decoration:none;font-size:.82rem;font-weight:600}
+@media (min-width:1000px){
+ .lay{grid-template-columns:230px minmax(0,1fr)}
+ .bar{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px;gap:12px;transform:none!important}
+ .bar .line{flex-direction:column;align-items:stretch;gap:12px}
+ .bar .seg{flex-direction:column;flex-wrap:nowrap;overflow:visible;gap:2px}
+ .bar .seg::before{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:2px 4px 4px}
+ #chain::before{content:"Siêu thị"}#day::before{content:"Ngày"}#grp::before{content:"Nhóm"}#mode::before{content:"Xem"}#sort::before{content:"Sắp xếp"}
+ .bar .seg button{border:0;background:none;border-radius:8px;text-align:left;display:flex;justify-content:space-between;gap:6px;white-space:normal;padding:6px 8px}
+ .bar .seg button:hover{background:var(--neutral-bg)}
+ .bar .seg button[aria-pressed="true"]{background:var(--good-bg);color:var(--good);font-weight:700}
+ .bar input{flex:none}
+ .bar .line:last-child{order:-1}
+}
+@media (min-width:1400px){
+ .lay{grid-template-columns:230px minmax(0,1fr) 340px}
+ .shop{display:flex!important;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
+ .shop #closeShop,#openShop{display:none}
+}
+@media (max-width:759px){.list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.tk .ph{height:112px}.tk .in{padding:7px 8px 9px}}
+@media (max-width:340px){.list{grid-template-columns:minmax(0,1fr)}}
+@container (max-width:185px){.tk .ac{flex-wrap:wrap}.tk .ac>*{flex:1 1 100%;justify-content:center}.tk .gia b{font-size:1.25rem}}
 </style><style id="xnavcss">.xnav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px;font:500 13px system-ui,sans-serif;border-bottom:1px solid rgba(127,127,127,.25)}.xnav a{padding:4px 10px;border-radius:999px;text-decoration:none;color:inherit;border:1px solid rgba(127,127,127,.35)}.xnav a.on{background:#0f6b4f;color:#fff;border-color:#0f6b4f}</style>
 <div class="wrap">
 <nav class="xnav" id="xnav"><a href="https://claude.ai/artifact/DzWTp6yUKmPQR6UmFJQvV2" target="_blank" rel="noopener" class=on>So giá leták</a><a href="https://claude.ai/artifact/9AcLvvsnur5RUJvgr8TL6s" target="_blank" rel="noopener">Săn giá Makro</a><a href="https://claude.ai/artifact/BED1NqBcXFGoDbWn21kHnk" target="_blank" rel="noopener">Check giá ở nhiều nơi</a></nav><header>
@@ -93,6 +146,7 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
   <p id="hdr" hidden></p>
 </header>
 <section class="stats" id="stats" hidden></section>
+<div class="lay">
 <div class="bar">
   <div class="line"><div class="seg" id="chain"></div></div>
   <div class="line"><div class="seg" id="day"></div></div>
@@ -100,13 +154,14 @@ input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8
   <div class="line"><div class="seg" id="sort"></div></div>
   <div class="line"><input id="q" type="search" placeholder="Tìm hàng, hãng…" aria-label="Tìm"></div>
 </div>
-<div class="list" id="list"></div>
-<button class="more" id="more" type="button" hidden>Xem thêm</button>
+<div class="main"><div class="list" id="list"></div>
+<button class="more" id="more" type="button" hidden>Xem thêm</button></div>
 <section class="shop" id="shop" hidden>
   <div class="shophead"><h2>Danh sách đi lấy hàng</h2><button type="button" class="ghost" id="closeShop">Đóng</button></div>
   <p class="hint" id="shopHint"></p><p class="hint">🏷 = món anh bấm “＋ list” ở trang Check giá (akce rẻ hơn giá nhập), em đồng bộ sang đây.</p>
   <div id="shopList"></div>
 </section>
+</div>
 <p class="hint" id="nccInfo"></p>
 <p class="foot" id="foot"></p>
 <div class="cart" id="cart" hidden>
@@ -241,14 +296,31 @@ function card(r){const K=nK(r);
   if(r.inv)pills.push(r.p<=r.inv[2]*0.97?`<span class="pill buy">Rẻ hơn giá anh đang nhập ${Math.round((1-r.p/r.inv[2])*100)}%</span>`:`<span class="pill">Hàng đang nhập</span>`);
   if(r.st==='sup'&&r.best&&!r.best.x)pills.push(`<span class="pill fut">Ứng viên akce riêng</span>`);
   const sup=r.sup?Object.entries(r.sup).map(([s,v])=>`${s} ${fmt(v[0])}${v[2]?' (akce)':''}`).join(' · '):'';
-  const pk=PICK[r.did];
-  return `<article class="row ${r.st}${pk?' picked':''}">
-  <label class="pick" title="Chọn để đi lấy"><input type="checkbox" data-did="${r.did}" ${pk?'checked':''}><span>${pk===2?'Đã lấy':'Lấy'}</span></label>
-  <div class="name"><span class="th" data-s="${esc((r.prod||'').split('/').pop())}">${thumb(r)}</span><div class="nt"><b>${esc(r.n)}</b><span class="sub">${esc(r.amt)}${r.note?' · '+esc(r.note):''}</span><div class="chips">${pills.join('')}</div></div></div>
-  <div class="cell k"><span class="lab">Giá siêu thị</span><span class="p">${fmt(r.p)}</span>${K?`<span class="m"><b>= ${fmt(r.p/K)} Kč/ks</b> (gói ${K} ks)</span>`:''}<span class="m">${esc(r.unit)}</span>${r.the?`<span class="m"><b>${esc(r.the)}</b></span>`:''}</div>
-  <div class="cell"><span class="lab">Hạn · giới hạn</span><span class="m">${win(r)}</span><span class="m">${r.lim?'<b>'+esc(r.lim)+'</b>':'Giới hạn ks: Kupi không ghi'}</span>${r.cond?`<span class="m">${esc(r.cond)}</span>`:''}${r.lk?`<span class="m"><a href="https://www.kupi.cz${r.lk}" target="_blank" rel="noopener">Xem trong leták ↗</a></span>`:''}</div>
-  <div class="cell"><span class="lab">Nơi nhập rẻ nhất</span>${r.best?`<span class="p">${fmt(r.best.eq)}</span>${K?`<span class="m"><b>= ${fmt(r.best.eq/K)} Kč/ks</b></span>`:''}<span class="m">${r.best.src}${r.best.x?' · khác hãng':''}: ${esc(r.best.n)}</span>${sup?`<span class="m">${sup}</span>`:''}`:'<span class="m">Không tìm thấy hàng tương đương</span>'}${r.oth?`<span class="m">Siêu thị khác: ${r.oth[0]} ${fmt(r.oth[1])}</span>`:''}${r.inv?`<span class="m">Anh đã nhập: ${r.inv[0]} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]}${r.inv[0]==='Makro'?', giá Makro hiện tại':''})</span>`:''}${r.st==='sup'&&r.pct&&r.best?`<span class="m">Giá thường siêu thị ~${fmt(r.p/(1-r.pct/100))}</span>`:''}</div>
+  const pk=PICK[r.did],slug=(r.prod||'').split('/').pop(),big=IMGU[slug];
+  // 19.11 anh: thẻ kiểu e-shop – ảnh to, nhãn trên ảnh, giá to, nơi nhập rẻ nhất, nút Lấy
+  const bd=[`<span>${r.chain}</span>`];if(r.pct)bd.push(`<span class="pc">−${r.pct} %</span>`);
+  if(r.fut)bd.push(`<span class="fut">Từ ${dd(r.d0)}</span>`);else if(r.short)bd.push(`<span class="end">⚠️ đến ${wd(r.d1)}</span>`);else if(r.d1&&daysTo(r.d1)<=1)bd.push(`<span class="end">Hết ${daysTo(r.d1)<=0?'hôm nay':'mai'}</span>`);
+  const ph=big?`<img alt="" loading="lazy" src="https://img.kupi.cz/kupi/thumbs/${esc(big)}" onerror="this.outerHTML='<span class=no>🛒</span>'">`:`<span class="th" data-s="${esc(slug)}">${thumb(r)}</span>`;
+  const st=r.st==='buy'?`<span class="pt">rẻ hơn giá nhập ${Math.abs(r.diff).toFixed(0)} %</span>`:r.st==='even'?`<span class="pt even">ngang giá nhập</span>`:r.st==='chk'?`<span class="pt chk">nghi ghép sai – kiểm tra</span>`:r.best&&r.diff!=null?`<span class="pt no">đắt hơn giá nhập ${Math.abs(r.diff).toFixed(0)} %</span>`:'';
+  const ss=r.best?`<div class="ss">Nhập rẻ nhất: <b>${r.best.src}</b> ${fmt(r.best.eq)}${K?` (= ${fmt(r.best.eq/K)}/ks)`:''} ${st}<span class="nm" title="${esc(r.best.n)}${sup?' · '+esc(sup):''}">${r.best.x?'khác hãng · ':''}${esc(r.best.n)}</span></div>`:'<div class="ss"><span class="pt no">không có hàng nhập tương đương</span></div>';
+  const ex=[];if(r.cheap)ex.push(`<span class="pill buy">Rẻ nhất giữa siêu thị</span>`);if(isOld(r)&&NEWD[r.chain]&&!r.fut)ex.push(`<span class="pill" title="Leták mới của ${r.chain} từ ${dd(NEWD[r.chain])}">Leták cũ</span>`);
+  if(r.inv)ex.push(r.p<=r.inv[2]*0.97?`<span class="pill buy" title="Anh đã nhập: ${r.inv[0]} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]})">Rẻ hơn hàng đang nhập ${Math.round((1-r.p/r.inv[2])*100)}%</span>`:`<span class="pill" title="Anh đã nhập: ${r.inv[0]} ${fmt(r.inv[2])} (${esc(r.inv[1])}, lần cuối ${r.inv[3]})">Hàng đang nhập · ${r.inv[0]} ${fmt(r.inv[2])}</span>`);
+  if(r.st==='sup'&&r.best&&!r.best.x)ex.push(`<span class="pill fut">Ứng viên akce riêng</span>`);
+  const old=r.pct&&r.p?r.p/(1-r.pct/100):null;
+  return `<article class="tk ${r.st}${pk?' picked':''}">
+  <div class="ph">${ph}<div class="bdg">${bd.join('')}</div></div>
+  <div class="in"><h3 class="tn" title="${esc(r.n)}">${esc(r.n)}</h3>
+  <div class="sub" title="${esc(r.amt)}${r.note?' · '+esc(r.note):''}">${esc(r.amt)}${r.note?' · '+esc(r.note):''}</div>
+  <div class="gia"><b>${fmt(r.p)} <small>Kč</small></b>${old?`<s>${fmt(old)}</s>`:''}</div>
+  <div class="dv" title="${esc(r.unit)}">${K?`<b>= ${fmt(r.p/K)} Kč/ks</b> · `:''}${esc(r.unit)}</div>
+  ${r.the?`<div class="dv" title="${esc(r.the)}"><b>${esc(r.the)}</b></div>`:''}
+  <div class="han${r.short||(!r.fut&&r.d1&&daysTo(r.d1)<=1)?' w':''}" title="${esc(r.cond||'')}">${win(r)}${r.lim?' · <b>'+esc(r.lim)+'</b>':''}${r.cond?' · '+esc(r.cond):''}</div>
+  ${ss}
+  ${ex.length?`<div class="chips">${ex.join('')}</div>`:''}
+  <div class="ac"><label class="pick pk" title="Chọn để đi lấy"><input type="checkbox" data-did="${r.did}" ${pk?'checked':''}><span>${pk===2?'✓ Đã lấy':pk?'✓ Đã chọn':'＋ Lấy'}</span></label>${r.lk?`<a class="lk" href="https://www.kupi.cz${r.lk}" target="_blank" rel="noopener" title="Xem trong leták">Leták ↗</a>`:''}</div>
+  </div>
 </article>`}
+const IMGU=(()=>{try{return __IMGU__}catch(e){return {}}})();
 // ảnh minh hoạ (Kupi.cz, thu nhỏ 48 px) nạp sau từ data/img.json để trang mở nhanh
 let IMG=null;
 function thumb(r){const k=(r.prod||'').split('/').pop();const u=IMG&&IMG[k];return u?`<img src="${u}" alt="" width="48" height="48" loading="lazy">`:''}
@@ -279,9 +351,11 @@ function cartBar(){const L=picked(),n=L.length,d=L.filter(r=>PICK[r.did]===2).le
 function groups(){const g={};picked().forEach(r=>(g[r.chain]=g[r.chain]||[]).push(r));
   Object.values(g).forEach(L=>L.sort((a,b)=>(a.d1||'9').localeCompare(b.d1||'9')||a.n.localeCompare(b.n)));
   return CH.filter(c=>g[c]).map(c=>[c,g[c]])}
-function renderShop(){cartBar();if($('#shop').hidden)return;
+const SHOPW=matchMedia('(min-width:1400px)');SHOPW.addEventListener&&SHOPW.addEventListener('change',()=>renderShop());
+function renderShop(){cartBar();if($('#shop').hidden&&!SHOPW.matches)return;
   $('#shopHint').textContent='Gom theo siêu thị, món hết hạn sớm trước. Tích ô khi đã lấy hàng; danh sách lưu lại, mở trên điện thoại vẫn thấy.';
   $('#shopList').innerHTML=groups().map(([c,L])=>`<div class="sg"><h3>${c} · ${L.length} món · ${fmt(L.reduce((a,r)=>a+r.p,0))} Kč</h3>${L.map(r=>`<div class="si${PICK[r.did]===2?' done':''}"><input type="checkbox" aria-label="Đã lấy" data-did="${r.did}" ${PICK[r.did]===2?'checked':''}><span class="th">${thumb(r)}</span><div class="sn"><b>${SRC[r.did]==='checkgia'?'<span title="Thêm từ trang Check giá (rẻ hơn giá nhập)">🏷 </span>':''}${esc(r.n)}</b><small>${esc(r.amt)} · ${r.short?'<span class="w">⚠️ chỉ đến '+wd(r.d1)+'</span>':win(r)}${r.the?' · '+esc(r.the):''}${r.cond?' · '+esc(r.cond):''}${r.lim?' · '+esc(r.lim):''}</small></div><span class="sp">${fmt(r.p)}</span></div>`).join('')}</div>`).join('')}
+const _rs=renderShop;renderShop=function(){_rs();if(!$('#shop').hidden||SHOPW.matches){if(!picked().length)$('#shopList').innerHTML='<p class="hint">Chưa chọn món nào – bấm “＋ Lấy” trên thẻ.</p>'}};
 $('#openShop').onclick=()=>{$('#shop').hidden=false;renderShop();$('#shop').scrollIntoView({behavior:'smooth'})};
 $('#closeShop').onclick=()=>{$('#shop').hidden=true};
 $('#clearPick').onclick=()=>{if($('#clearPick').dataset.c){Object.keys(PICK).forEach(d=>write(d,0));render();renderShop();$('#clearPick').dataset.c='';$('#clearPick').textContent='Bỏ chọn hết'}else{$('#clearPick').dataset.c='1';$('#clearPick').textContent='Bấm lần nữa để xoá'}};
@@ -330,7 +404,7 @@ function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt
 $('#q').addEventListener('input',()=>{shown=150;render()});
 $('#more').onclick=()=>{shown+=150;render()};
 $('#foot').innerHTML=`Nguồn: Kupi.cz (giá leták, hạn, ghi chú, giới hạn ks), kho giá Makro/JIP/Tamda của trang Săn giá. Giới hạn số ks/khách chỉ có khi Kupi ghi; dòng ghi “Kupi không ghi” thì chưa chắc chắn, anh mở “Xem trong leták” để xem. “Nghi ghép sai” là món rẻ hơn giá nhập trên 55 %, thường do ghép nhầm hàng hoặc quy cách, không tính là giá đẹp. Ngang giá là chênh dưới 3 %. Cập nhật ${M.stamp}.`;
-render();
+render();renderShop();
 
 // ===== 26.10 anh: nút F5 để lấy leták + so giá ngay lúc cần (gọi tác vụ trên máy cửa hàng; trạng thái ở db status/f5) =====
 (function(){const TRIG='trig_01E1SHM6LG8ztKuJuwQTcmon';let S=null,DBX=null,MCPX;
